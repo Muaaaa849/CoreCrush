@@ -49,7 +49,7 @@ src/render/     three/webgpu 描画、カメラ、補間
 src/vfx/        TSL シェーダー、パーティクル（プール）
 src/input/      キーバインド（KeyboardEvent.code）、Pointer Lock、タッチ操作（仮想スティック・ボタン。ADR 0004）
 src/ui/         HUD、設定画面（タッチ配置の調整画面）
-data/           balance.json, quality.json（画質段階）, characters/, skills/, vfx/（数値の唯一の置き場）
+data/           balance.json, quality.json（画質段階）, render.json（画づくり）, characters/, skills/, vfx/（数値の唯一の置き場）
 workers/signaling/  Worker + Durable Objects（シグナリング＋試作ページ配信。docs/online-setup.md）
 tests/          sim/, net/, e2e/    bench/  性能計測（run-m0.mjs, results/）
 src/m0/         M0 技術検証ページ（使い捨て。本番コードから import しない）。lab/ は実機計測用 Artifact

@@ -2,6 +2,8 @@
 import * as THREE from 'three/webgpu';
 import type { Balance } from '../sim/balance';
 import type { Player, World } from '../sim/types';
+import { PostPipeline, RENDER_LOOK, type PostDebugView } from './postPipeline';
+import type { QualityPreset } from './quality';
 
 export type FaceStage = 'smile' | 'nervous' | 'angry' | 'blink' | 'crack';
 
@@ -53,12 +55,15 @@ export class ProtoView {
   private ballShadow: THREE.Mesh;
   private prev: Snap = { px: [0, 0], pz: [0, 0], bx: 0, by: 0, bz: 0, bMode: '', bThrower: -1, bRally: 0 };
   private cur: Snap = { px: [0, 0], pz: [0, 0], bx: 0, by: 0, bz: 0, bMode: '', bThrower: -1, bRally: 0 };
+  private readonly post: PostPipeline;
   backend = 'unknown';
 
-  private constructor(renderer: THREE.WebGPURenderer, b: Balance) {
+  private constructor(renderer: THREE.WebGPURenderer, b: Balance, quality: QualityPreset, debugView: PostDebugView) {
     this.renderer = renderer;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 0.9;
+    renderer.toneMappingExposure = RENDER_LOOK.toneMappingExposure;
+    this.post = new PostPipeline(renderer, this.scene, this.camera, debugView);
+    this.post.configure(quality);
     this.scene.background = new THREE.Color(0x07080d);
     this.scene.add(new THREE.HemisphereLight(0x8899cc, 0x221122, 0.9));
     const sun = new THREE.DirectionalLight(0xffffff, 1.0);
@@ -133,14 +138,15 @@ export class ProtoView {
    * WebGPU で初期化し、初期化か試し描画（シェーダーのウォームアップを兼ねる）が失敗したら
    * WebGL2 バックエンドで作り直す（ADR 0001。古い Chrome では初回描画で例外が出る）
    */
-  static async create(canvasHost: HTMLElement, b: Balance): Promise<ProtoView> {
+  static async create(canvasHost: HTMLElement, b: Balance, quality: QualityPreset, debugView: PostDebugView = 'none'): Promise<ProtoView> {
     const attempt = async (forceWebGL: boolean): Promise<ProtoView> => {
-      const renderer = new THREE.WebGPURenderer({ antialias: true, forceWebGL });
+      // AA はポスト（SMAA）で行う。RenderPipeline の最終出力にキャンバスの MSAA は要らない
+      const renderer = new THREE.WebGPURenderer({ antialias: false, forceWebGL });
       try {
         await renderer.init();
-        renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-        const v = new ProtoView(renderer, b);
-        v.renderer.render(v.scene, v.camera);
+        renderer.setPixelRatio(Math.min(devicePixelRatio, quality.pixelRatioMax));
+        const v = new ProtoView(renderer, b, quality, debugView);
+        v.post.render();
         v.backend = (renderer.backend as unknown as { isWebGPUBackend?: boolean }).isWebGPUBackend ? 'WebGPU' : 'WebGL2';
         return v;
       } catch (e) {
@@ -157,6 +163,11 @@ export class ProtoView {
     }
     canvasHost.appendChild(v.renderer.domElement);
     return v;
+  }
+
+  /** 画質段階のポスト構成（ブルーム・SMAA）を反映する */
+  setQuality(preset: QualityPreset): void {
+    this.post.configure(preset);
   }
 
   /** 描画解像度の倍率（CSS px あたりの描画 px）。変えたら resize を呼ぶ */
@@ -298,6 +309,6 @@ export class ProtoView {
     this.camera.updateProjectionMatrix();
     this.camera.lookAt(cam.pos.x + f.x, cam.pos.y + f.y, cam.pos.z + f.z);
 
-    this.renderer.render(this.scene, this.camera);
+    this.post.render();
   }
 }

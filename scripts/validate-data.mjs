@@ -59,5 +59,10 @@ if (!validateQ(quality)) {
   }
 }
 
+// 画づくり（GDD 12.2）
+const render = load('data/render.json');
+const validateR = ajv.compile(load('schemas/render.schema.json'));
+if (!validateR(render)) for (const e of validateR.errors ?? []) fail(`render.json${e.instancePath} ${e.message}`);
+
 if (failed) process.exit(1);
-console.log('OK  data/balance.json, data/quality.json');
+console.log('OK  data/balance.json, data/quality.json, data/render.json');

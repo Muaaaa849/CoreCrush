@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CORE-CRUSH 画づくり（GDD 12.2）",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["toneMappingExposure", "bloom"],
+  "properties": {
+    "toneMappingExposure": { "description": "ACES Filmic の露出（GDD 12.2: 0.9 前後）", "type": "number", "exclusiveMinimum": 0 },
+    "bloom": {
+      "description": "トーンマップ前の HDR 色に掛けるブルーム（BloomNode）。しきい値を超えるのは emissive を強くした物だけにする（ADR 0005）",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["strength", "radius", "threshold"],
+      "properties": {
+        "strength": { "type": "number", "minimum": 0 },
+        "radius": { "type": "number", "minimum": 0, "maximum": 1 },
+        "threshold": { "description": "HDR 色の輝度がこれ未満は光らない。照明を受けた普通の面は 1 未満に収める", "type": "number", "minimum": 0 }
+      }
+    }
+  }
+}

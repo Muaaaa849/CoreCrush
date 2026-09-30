@@ -1,0 +1,8 @@
+{
+  "toneMappingExposure": 0.9,
+  "bloom": {
+    "strength": 1.0,
+    "radius": 0.4,
+    "threshold": 1.0
+  }
+}

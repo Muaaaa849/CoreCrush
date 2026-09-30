@@ -87,10 +87,19 @@ async function main(): Promise<void> {
   };
   newMatch();
 
+  const touchMode = new URLSearchParams(location.search).get('touch') === '1' || matchMedia('(pointer: coarse)').matches;
+  if (touchMode) document.documentElement.classList.add('touchMode');
+  // --- 画質（高・中・低＋自動。Q-31）。自動は端末の既定の段階から、重いと描画解像度を段階的に下げる ---
+  let qualitySetting = parseQualitySetting(store<unknown>('cc.quality', 'auto'));
+  const autoRes = new AutoResolution();
+  let qualityTier = resolveTier(qualitySetting, touchMode);
+
   const stage = $('stage');
   let view: ProtoView;
   try {
-    view = await ProtoView.create(stage, balance);
+    // ?post=glow: ブルームだけを表示（見た目の調整用）
+    const post = new URLSearchParams(location.search).get('post');
+    view = await ProtoView.create(stage, balance, QUALITY.presets[qualityTier], post === 'glow' ? post : 'none');
   } catch (e) {
     const s = document.createElement('span');
     s.className = 'error';
@@ -104,17 +113,12 @@ async function main(): Promise<void> {
   const input = new KeyboardMouse(view.renderer.domElement);
 
   // --- タッチ操作（スマホ横持ち）。?touch=1 で PC でも出せる ---
-  const touchMode = new URLSearchParams(location.search).get('touch') === '1' || matchMedia('(pointer: coarse)').matches;
-  if (touchMode) document.documentElement.classList.add('touchMode');
 
-  // --- 画質（高・中・低＋自動。Q-31）。自動は端末の既定の段階から、重いと描画解像度を段階的に下げる ---
-  let qualitySetting = parseQualitySetting(store<unknown>('cc.quality', 'auto'));
-  const autoRes = new AutoResolution();
-  let qualityTier = resolveTier(qualitySetting, touchMode);
   const qualityLabel = () => `${QUALITY_LABEL[qualityTier]}${qualitySetting === 'auto' ? `・解像度 ${autoRes.scale} 倍` : ''}`;
   const applyQuality = () => {
     qualityTier = resolveTier(qualitySetting, touchMode);
     const scale = qualitySetting === 'auto' ? autoRes.scale : 1;
+    view.setQuality(QUALITY.presets[qualityTier]);
     view.setPixelRatio(pixelRatioFor(QUALITY.presets[qualityTier], devicePixelRatio, scale));
     resize();
     $('qualityOut').textContent = qualityLabel();
