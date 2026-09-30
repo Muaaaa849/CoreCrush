@@ -18,7 +18,8 @@
     "test:mutation": "node scripts/mutation-check.mjs",
     "proto:artifact": "node scripts/build-artifact.mjs src/proto/main.ts src/proto/template.html dist-lab/core-crush-proto.html --no-online",
     "proto:pages": "node scripts/proto-pages.mjs",
-    "proto:gh-pages": "node scripts/proto-pages.mjs --out=dist-pages --server=https://core-crush-signaling.phantom82509673.workers.dev"
+    "proto:gh-pages": "node scripts/proto-pages.mjs --out=dist-pages --server=https://core-crush-signaling.phantom82509673.workers.dev",
+    "assets": "node scripts/build-assets.mjs"
   },
   "dependencies": {
     "three": "0.186.1"
@@ -28,6 +29,8 @@
     "@types/node": "26.6.3",
     "@types/three": "0.186.0",
     "ajv": "8.20.0",
+    "ktx2-encoder": "0.6.0",
+    "sharp": "0.35.5",
     "typescript": "7.0.2",
     "vite": "8.3.1",
     "vitest": "5.0.2"

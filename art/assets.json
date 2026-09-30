@@ -1,0 +1,48 @@
+{
+  "textures": [
+    {
+      "id": "asphalt02_diff",
+      "src": "art/source/polyhaven/asphalt_02/asphalt_02_diff_1k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/asphalt_02/asphalt_02_diff_1k.jpg",
+      "license": "CC0 1.0（Poly Haven: https://polyhaven.com/a/asphalt_02）",
+      "kind": "color"
+    },
+    {
+      "id": "asphalt02_nor",
+      "src": "art/source/polyhaven/asphalt_02/asphalt_02_nor_gl_1k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/asphalt_02/asphalt_02_nor_gl_1k.jpg",
+      "license": "CC0 1.0（Poly Haven: https://polyhaven.com/a/asphalt_02）",
+      "kind": "normal"
+    },
+    {
+      "id": "asphalt02_rough",
+      "src": "art/source/polyhaven/asphalt_02/asphalt_02_rough_1k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/asphalt_02/asphalt_02_rough_1k.jpg",
+      "license": "CC0 1.0（Poly Haven: https://polyhaven.com/a/asphalt_02）",
+      "kind": "linear"
+    },
+    {
+      "id": "backdrop_sky",
+      "src": "art/generated/backdrop-sky-01.jpg",
+      "license": "プランナー生成（Nano Banana 2）",
+      "kind": "color",
+      "maxWidth": 2048
+    },
+    {
+      "id": "backdrop_cyber",
+      "src": "art/generated/backdrop-cyber-01.jpg",
+      "license": "プランナー生成（Nano Banana 2）",
+      "kind": "color",
+      "chromaKey": true,
+      "maxWidth": 2048
+    },
+    {
+      "id": "backdrop_steam",
+      "src": "art/generated/backdrop-steam-01.jpg",
+      "license": "プランナー生成（Nano Banana 2）",
+      "kind": "color",
+      "chromaKey": true,
+      "maxWidth": 2048
+    }
+  ]
+}

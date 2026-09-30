@@ -55,7 +55,7 @@ if (!validateQ(quality)) {
     for (const k of ['pixelRatioMax', 'bloomScale', 'shadowMapSize', 'particleMul', 'decorMul']) {
       if (b[k] > a[k]) fail(`quality.presets.${order[i]}.${k} が ${order[i - 1]} より大きい`);
     }
-    if (b.smaa && !a.smaa) fail(`quality.presets.${order[i]}.smaa が ${order[i - 1]} より重い`);
+    for (const k of ['smaa', 'floorReflection']) if (b[k] && !a[k]) fail(`quality.presets.${order[i]}.${k} が ${order[i - 1]} より重い`);
   }
 }
 

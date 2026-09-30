@@ -43,7 +43,7 @@ interface Snap {
 export class ProtoView {
   readonly renderer: THREE.WebGPURenderer;
   readonly scene = new THREE.Scene();
-  readonly camera = new THREE.PerspectiveCamera(75, 16 / 9, 0.05, 200);
+  readonly camera = new THREE.PerspectiveCamera(75, 16 / 9, 0.05, 1000);
   private players: THREE.Mesh[] = [];
   private playerMats: THREE.MeshStandardNodeMaterial[] = [];
   private playerRims: { value: number }[] = [];
@@ -125,6 +125,8 @@ export class ProtoView {
         renderer.setPixelRatio(Math.min(devicePixelRatio, quality.pixelRatioMax));
         const v = new ProtoView(renderer, b, quality, debugView);
         v.stage.buildEnvironment(renderer, PLAYER_COLOR);
+        // テクスチャ・遠景は待たずに始める（読めたら差し替わる）
+        void v.stage.loadAssets(renderer);
         v.setQuality(quality);
         v.post.render();
         v.backend = (renderer.backend as unknown as { isWebGPUBackend?: boolean }).isWebGPUBackend ? 'WebGPU' : 'WebGL2';

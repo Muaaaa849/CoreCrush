@@ -31,7 +31,7 @@
     "areaLights": [
       {
         "color": "#ff2bd6",
-        "intensity": 1.6,
+        "intensity": 0.9,
         "widthM": 30,
         "heightM": 1.2,
         "posM": [
@@ -47,7 +47,7 @@
       },
       {
         "color": "#35f2ff",
-        "intensity": 1.6,
+        "intensity": 0.9,
         "widthM": 30,
         "heightM": 1.2,
         "posM": [
@@ -67,13 +67,22 @@
       "panelHdr": 0.9
     },
     "floor": {
-      "color": "#0b0d14",
-      "puddleColor": "#06070b",
-      "roughnessMin": 0.14,
-      "roughnessMax": 0.65,
-      "metalness": 0.2,
-      "noiseScale": 0.3,
-      "puddleCoverage": 0.35
+      "tileM": 3,
+      "albedoMul": 0.55,
+      "tint": "#9aa0b8",
+      "roughnessMul": 1.0,
+      "roughnessMin": 0.04,
+      "metalness": 0.1,
+      "normalScale": 1.0,
+      "puddleScale": 0.09,
+      "puddleCoverage": 0.15,
+      "puddleSoftness": 0.25,
+      "puddleDarken": 0.45,
+      "grimeScale": 0.25,
+      "grimeAmount": 0.35,
+      "reflectPuddle": 0.8,
+      "reflectDry": 0.12,
+      "reflectDistortion": 0.04
     },
     "lines": {
       "widthM": 0.08,
@@ -106,23 +115,39 @@
         2.2
       ]
     },
-    "skyline": {
-      "count": 90,
-      "color": "#0c0e17",
-      "windowHdr": 0.3,
-      "radiusM": [
-        95,
-        170
-      ],
-      "heightM": [
-        15,
-        70
+    "backdrop": {
+      "haze": "#0b0c16",
+      "saturation": 0.65,
+      "sky": {
+        "texture": "backdrop_sky",
+        "radiusM": 420,
+        "heightM": 300,
+        "yM": -60,
+        "repeat": 3,
+        "hdr": 0.5
+      },
+      "layers": [
+        {
+          "texture": "backdrop_cyber",
+          "radiusM": 320,
+          "count": 8,
+          "widthM": 260,
+          "yM": -34,
+          "startDeg": 0,
+          "hdr": 0.7,
+          "haze": 0.3
+        },
+        {
+          "texture": "backdrop_steam",
+          "radiusM": 200,
+          "count": 11,
+          "widthM": 120,
+          "yM": -24,
+          "startDeg": 16,
+          "hdr": 0.6,
+          "haze": 0.2
+        }
       ]
-    },
-    "signs": {
-      "count": 24,
-      "hdr": 0.8,
-      "saturation": 0.55
     }
   }
 }

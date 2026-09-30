@@ -29,7 +29,8 @@ const tmp = mkdtempSync(resolve(tmpdir(), 'cc-artifact-'));
 await build({
   configFile: false,
   logLevel: 'warn',
-  define: { __ONLINE__: JSON.stringify(online), __DEFAULT_SERVER__: JSON.stringify(server), __BUILD__: JSON.stringify(buildId) },
+  // import.meta.url: 1 ファイルに埋め込むと元の URL がないので、ページの URL を使う（KTX2Loader が読み込み時に URL を組む）
+  define: { __ONLINE__: JSON.stringify(online), __DEFAULT_SERVER__: JSON.stringify(server), __BUILD__: JSON.stringify(buildId), 'import.meta.url': 'document.baseURI' },
   build: {
     outDir: tmp,
     emptyOutDir: true,

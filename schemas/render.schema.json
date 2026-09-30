@@ -55,8 +55,7 @@
         "cage",
         "opponentRim",
         "crowd",
-        "skyline",
-        "signs"
+        "backdrop"
       ],
       "properties": {
         "background": {
@@ -219,32 +218,46 @@
           "description": "床に映すネオンの環境マップ"
         },
         "floor": {
+          "description": "床（CC0 アスファルト＋水たまり＋平面反射）",
           "type": "object",
           "additionalProperties": false,
           "required": [
-            "color",
-            "puddleColor",
+            "tileM",
+            "albedoMul",
+            "tint",
+            "roughnessMul",
             "roughnessMin",
-            "roughnessMax",
             "metalness",
-            "noiseScale",
-            "puddleCoverage"
+            "normalScale",
+            "puddleScale",
+            "puddleCoverage",
+            "puddleSoftness",
+            "puddleDarken",
+            "grimeScale",
+            "grimeAmount",
+            "reflectPuddle",
+            "reflectDry",
+            "reflectDistortion"
           ],
           "properties": {
-            "color": {
-              "type": "string",
-              "pattern": "^#[0-9a-fA-F]{6}$"
+            "tileM": {
+              "type": "number",
+              "exclusiveMinimum": 0
             },
-            "puddleColor": {
-              "type": "string",
-              "pattern": "^#[0-9a-fA-F]{6}$"
-            },
-            "roughnessMin": {
+            "albedoMul": {
               "type": "number",
               "minimum": 0,
-              "maximum": 1
+              "maximum": 2
             },
-            "roughnessMax": {
+            "tint": {
+              "$ref": "#/definitions/hex"
+            },
+            "roughnessMul": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 2
+            },
+            "roughnessMin": {
               "type": "number",
               "minimum": 0,
               "maximum": 1
@@ -254,14 +267,50 @@
               "minimum": 0,
               "maximum": 1
             },
-            "noiseScale": {
+            "normalScale": {
+              "type": "number",
+              "minimum": 0
+            },
+            "puddleScale": {
               "type": "number",
               "exclusiveMinimum": 0
             },
             "puddleCoverage": {
               "type": "number",
+              "minimum": -1,
+              "maximum": 1
+            },
+            "puddleSoftness": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "puddleDarken": {
+              "type": "number",
               "minimum": 0,
               "maximum": 1
+            },
+            "grimeScale": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "grimeAmount": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "reflectPuddle": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "reflectDry": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "reflectDistortion": {
+              "type": "number",
+              "minimum": 0
             }
           }
         },
@@ -392,77 +441,121 @@
             }
           }
         },
-        "skyline": {
+        "backdrop": {
           "type": "object",
           "additionalProperties": false,
           "required": [
-            "count",
-            "color",
-            "windowHdr",
-            "radiusM",
-            "heightM"
+            "haze",
+            "saturation",
+            "sky",
+            "layers"
           ],
           "properties": {
-            "count": {
-              "type": "integer",
-              "minimum": 0
-            },
-            "color": {
-              "type": "string",
-              "pattern": "^#[0-9a-fA-F]{6}$"
-            },
-            "windowHdr": {
-              "type": "number",
-              "minimum": 0,
-              "exclusiveMaximum": 1,
-              "description": "光らせない物: ブルームのしきい値（1.0）未満"
-            },
-            "radiusM": {
-              "type": "array",
-              "items": {
-                "type": "number",
-                "minimum": 0
-              },
-              "minItems": 2,
-              "maxItems": 2
-            },
-            "heightM": {
-              "type": "array",
-              "items": {
-                "type": "number",
-                "minimum": 0
-              },
-              "minItems": 2,
-              "maxItems": 2
-            }
-          }
-        },
-        "signs": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": [
-            "count",
-            "hdr",
-            "saturation"
-          ],
-          "properties": {
-            "count": {
-              "type": "integer",
-              "minimum": 0
-            },
-            "hdr": {
-              "type": "number",
-              "minimum": 0,
-              "exclusiveMaximum": 1,
-              "description": "光らせない物: ブルームのしきい値（1.0）未満"
+            "haze": {
+              "$ref": "#/definitions/hex"
             },
             "saturation": {
               "type": "number",
               "minimum": 0,
               "maximum": 1
+            },
+            "sky": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "texture",
+                "radiusM",
+                "heightM",
+                "yM",
+                "repeat",
+                "hdr"
+              ],
+              "properties": {
+                "texture": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9_]+$",
+                  "description": "art/assets.json の id"
+                },
+                "radiusM": {
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                },
+                "heightM": {
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                },
+                "yM": {
+                  "type": "number"
+                },
+                "repeat": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "hdr": {
+                  "type": "number",
+                  "minimum": 0,
+                  "exclusiveMaximum": 1,
+                  "description": "背景は光らせない（ブルームのしきい値未満）"
+                }
+              }
+            },
+            "layers": {
+              "type": "array",
+              "maxItems": 4,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "texture",
+                  "radiusM",
+                  "count",
+                  "widthM",
+                  "yM",
+                  "startDeg",
+                  "hdr",
+                  "haze"
+                ],
+                "properties": {
+                  "texture": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9_]+$",
+                    "description": "art/assets.json の id"
+                  },
+                  "radiusM": {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                  },
+                  "count": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 16
+                  },
+                  "widthM": {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                  },
+                  "yM": {
+                    "type": "number"
+                  },
+                  "startDeg": {
+                    "type": "number"
+                  },
+                  "hdr": {
+                    "type": "number",
+                    "minimum": 0,
+                    "exclusiveMaximum": 1,
+                    "description": "背景は光らせない（ブルームのしきい値未満）"
+                  },
+                  "haze": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  }
+                }
+              }
             }
           },
-          "description": "遠景の看板（彩度を落とす）"
+          "description": "遠景（生成画像）。霧の外なので自前で暗く・彩度を落とす"
         }
       },
       "description": "ステージの見た目（GDD 1, 12.2）"

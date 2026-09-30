@@ -13,6 +13,8 @@ export interface QualityPreset {
   /** 影マップの一辺。0 は影なし（丸影） */
   shadowMapSize: number;
   smaa: boolean;
+  /** 床の水たまりの平面反射 */
+  floorReflection: boolean;
   particleMul: number;
   decorMul: number;
 }
