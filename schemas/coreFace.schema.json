@@ -1,0 +1,26 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CORE-CRUSH コアの液晶の顔（GDD 13）",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["gridPx", "faceScale", "faceHdr", "backlightHdr", "heldDim", "scanlineAmount", "scanlineSpeed", "aberrationPx", "blinkPeriodSec", "shell", "light", "colors", "frames"],
+  "definitions": {
+    "hex": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
+    "frame": { "type": "array", "items": { "type": "string", "pattern": "^[.#]+$" } }
+  },
+  "properties": {
+    "gridPx": { "description": "表情 1 枚の画素数（正方形）", "type": "integer", "minimum": 4, "maximum": 64 },
+    "faceScale": { "description": "球の見かけの半径に対する顔の大きさの逆数（大きいほど顔が小さい）", "type": "number", "exclusiveMinimum": 0 },
+    "faceHdr": { "description": "顔の画素の HDR 輝度。コアを画面で最も明るくする（ブルームのしきい値 1.0 より十分上）", "type": "number", "minimum": 1.5 },
+    "backlightHdr": { "description": "液晶の地の光（顔以外）", "type": "number", "minimum": 0 },
+    "heldDim": { "description": "自分が FPS で持っているときの明るさの倍率（視界を遮らない）", "type": "number", "minimum": 0, "maximum": 1 },
+    "scanlineAmount": { "type": "number", "minimum": 0, "maximum": 1 },
+    "scanlineSpeed": { "type": "number", "minimum": 0 },
+    "aberrationPx": { "description": "色収差のずれ（画素単位）", "type": "number", "minimum": 0, "maximum": 1 },
+    "blinkPeriodSec": { "description": "点滅段階の周期", "type": "number", "exclusiveMinimum": 0 },
+    "shell": { "type": "object", "additionalProperties": false, "required": ["color", "roughness", "metalness"], "properties": { "color": { "$ref": "#/definitions/hex" }, "roughness": { "type": "number", "minimum": 0, "maximum": 1 }, "metalness": { "type": "number", "minimum": 0, "maximum": 1 } } },
+    "light": { "description": "コアが周りを照らす点光源", "type": "object", "additionalProperties": false, "required": ["intensity", "rangeM"], "properties": { "intensity": { "type": "number", "minimum": 0 }, "rangeM": { "type": "number", "exclusiveMinimum": 0 } } },
+    "colors": { "type": "object", "additionalProperties": false, "required": ["smile", "nervous", "angry", "blink", "crack"], "properties": { "smile": { "$ref": "#/definitions/hex" }, "nervous": { "$ref": "#/definitions/hex" }, "angry": { "$ref": "#/definitions/hex" }, "blink": { "$ref": "#/definitions/hex" }, "crack": { "$ref": "#/definitions/hex" } } },
+    "frames": { "description": "表情の画素絵（行ごと、# が点灯）。段階の閾値は balance.json の count.faceSec", "type": "object", "additionalProperties": false, "required": ["smile", "nervous", "angry", "crack"], "properties": { "smile": { "$ref": "#/definitions/frame" }, "nervous": { "$ref": "#/definitions/frame" }, "angry": { "$ref": "#/definitions/frame" }, "crack": { "$ref": "#/definitions/frame" } } }
+  }
+}

@@ -6,6 +6,7 @@ import { clamp, color, dot, float, materialEmissive, normalView, positionViewDir
 import { PostPipeline, RENDER_LOOK, type PostDebugView } from './postPipeline';
 import type { QualityPreset } from './quality';
 import { Stage } from './stage';
+import { CoreFace } from '../vfx/coreFace';
 
 export type FaceStage = 'smile' | 'nervous' | 'angry' | 'blink' | 'crack';
 
@@ -18,13 +19,6 @@ export function faceStage(b: Balance, countSec: number): FaceStage {
   return 'smile';
 }
 
-const FACE_COLOR: Record<FaceStage, number> = {
-  smile: 0x35f2ff,
-  nervous: 0xffd23f,
-  angry: 0xff3b3b,
-  blink: 0xff3b3b,
-  crack: 0xffffff,
-};
 
 const PLAYER_COLOR = [0x35f2ff, 0xff2bd6] as const;
 // FPS で手に持った球の表示位置（カメラ基準）と、投げた直後に実位置へ寄せる区間
@@ -56,8 +50,7 @@ export class ProtoView {
   private rimHdr = 0;
   private readonly stage: Stage;
   private ball: THREE.Mesh;
-  private ballMat: THREE.MeshStandardMaterial;
-  private ballLight: THREE.PointLight;
+  private readonly face = new CoreFace();
   private ballShadow: THREE.Mesh;
   private prev: Snap = { px: [0, 0], pz: [0, 0], bx: 0, by: 0, bz: 0, bMode: '', bThrower: -1, bRally: 0 };
   private cur: Snap = { px: [0, 0], pz: [0, 0], bx: 0, by: 0, bz: 0, bMode: '', bThrower: -1, bRally: 0 };
@@ -110,12 +103,10 @@ export class ProtoView {
     }
     this.rimHdr = rimLook.hdr;
 
-    this.ballMat = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: FACE_COLOR.smile, emissiveIntensity: 3 });
-    this.ball = new THREE.Mesh(new THREE.SphereGeometry(b.ball.radiusM, 32, 16), this.ballMat);
+    this.ball = new THREE.Mesh(new THREE.SphereGeometry(b.ball.radiusM, 48, 24), this.face.material);
     this.ball.castShadow = true;
     this.scene.add(this.ball);
-    this.ballLight = new THREE.PointLight(FACE_COLOR.smile, 8, 8);
-    this.ball.add(this.ballLight);
+    this.ball.add(this.face.light);
     this.ballShadow = new THREE.Mesh(new THREE.CircleGeometry(b.ball.radiusM * 1.2, 24), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.5 }));
     this.ballShadow.rotation.x = -Math.PI / 2;
     this.scene.add(this.ballShadow);
@@ -288,11 +279,8 @@ export class ProtoView {
       this.ball.position.set(hx + (bx - hx) * k, hy + (by - hy) * k, hz + (bz - hz) * k);
     } else this.ball.position.set(bx, by, bz);
     const stage = faceStage(b, w.ball.countTicks / b.tickHz);
-    const blinkOff = (stage === 'blink' || stage === 'crack') && Math.sin(timeMs / 60) < 0;
-    const col = FACE_COLOR[stage];
-    this.ballMat.emissive.setHex(col);
-    this.ballMat.emissiveIntensity = blinkOff ? 0.6 : 3;
-    this.ballLight.color.setHex(col);
+    // 自分が FPS で持っている間は顔を暗くして視界を遮らない（相手や他の場面ではコアが一番明るい）
+    this.face.update(stage, timeMs / 1000, heldByMe && cam.blend > 0.5);
     this.ball.scale.setScalar(stage === 'crack' ? 1 + 0.08 * Math.sin(timeMs / 30) : 1);
     this.ballShadow.visible = w.ball.mode !== 'held';
     this.ballShadow.position.set(this.ball.position.x, 0.006, this.ball.position.z);

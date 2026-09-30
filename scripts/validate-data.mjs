@@ -64,5 +64,17 @@ const render = load('data/render.json');
 const validateR = ajv.compile(load('schemas/render.schema.json'));
 if (!validateR(render)) for (const e of validateR.errors ?? []) fail(`render.json${e.instancePath} ${e.message}`);
 
+// コアの顔（GDD 13）
+const face = load('data/vfx/coreFace.json');
+const validateF = ajv.compile(load('schemas/coreFace.schema.json'));
+if (!validateF(face)) for (const e of validateF.errors ?? []) fail(`vfx/coreFace.json${e.instancePath} ${e.message}`);
+else {
+  for (const [name, rows] of Object.entries(face.frames)) {
+    if (rows.length !== face.gridPx) fail(`vfx/coreFace.json frames.${name}: 行数 ${rows.length} ≠ gridPx ${face.gridPx}`);
+    rows.forEach((r, i) => r.length !== face.gridPx && fail(`vfx/coreFace.json frames.${name}[${i}]: 長さ ${r.length} ≠ ${face.gridPx}`));
+  }
+  if (face.faceHdr * face.heldDim >= render.bloom.threshold) fail('coreFace: 所持中（heldDim）でもブルームのしきい値を超える（視界を遮る）');
+}
+
 if (failed) process.exit(1);
-console.log('OK  data/balance.json, data/quality.json, data/render.json');
+console.log('OK  data/balance.json, data/quality.json, data/render.json, data/vfx/coreFace.json');
