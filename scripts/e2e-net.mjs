@@ -2,7 +2,7 @@
 // 両ページの確定イベントログ・勝敗が一致することを確かめる。使い方: npm run test:e2e:net
 import { spawn, spawnSync } from 'node:child_process';
 import { createServer } from 'node:http';
-import { readFileSync } from 'node:fs';
+import { mkdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { chromium } from 'playwright';
 
@@ -12,6 +12,7 @@ const b = spawnSync('node', ['scripts/build-artifact.mjs', 'tests/e2e/netPage.ts
 if (b.status !== 0) process.exit(1);
 
 const workerDir = resolve(root, 'workers/signaling');
+mkdirSync(resolve(workerDir, 'public'), { recursive: true }); // 静的アセットのディレクトリが要る
 const wrangler = spawn('npx', ['wrangler', 'dev', '--local', '--port', '8787'], { cwd: workerDir, stdio: ['ignore', 'pipe', 'pipe'] });
 const html = readFileSync(out);
 const http = createServer((_req, res) => { res.writeHead(200, { 'Content-Type': 'text/html' }); res.end(html); }).listen(5190);

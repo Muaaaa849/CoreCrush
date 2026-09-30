@@ -15,3 +15,8 @@ new_sqlite_classes = ["Room"]
 # 接続を許すページのオリジン（カンマ区切り。* は全て）。本番は Pages のドメインに絞る
 ALLOWED_ORIGINS = "*"
 # TURN_KEY_ID と TURN_KEY_API_TOKEN は `wrangler secret put` で設定する（リポジトリに置かない）
+
+# 箱キャラ試作のページも同じ Worker から配る（同一オリジンなのでサーバー URL の入力が不要）。
+# 中身はデプロイ前に `npm run proto:pages`（リポジトリのルート）で作る
+[assets]
+directory = "./public"

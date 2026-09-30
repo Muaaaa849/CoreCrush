@@ -6,3 +6,4 @@ bench/results/*.local.json
 dist-lab/
 .wrangler/
 .dev.vars
+workers/signaling/public/

@@ -72,6 +72,12 @@ button.ghost { background: transparent; color: var(--fg); border: 1px solid var(
 button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--me); outline-offset: 2px; }
 .status { font: 12px var(--font-mono); color: var(--muted); }
 .error { color: var(--bad); }
+.online { border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 8px 10px; margin: 8px 0 0; display: grid; gap: 6px; min-width: 0; }
+.online label { grid-template-columns: 5em 1fr; }
+.online legend { padding: 0 4px; font-size: 12px; opacity: 0.8; }
+.online input[type=url], .online input[type=text] { min-width: 0; width: 100%; box-sizing: border-box; background: rgba(0,0,0,0.35); color: inherit; border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; padding: 6px 8px; font: inherit; }
+.onlineRow { display: grid; grid-template-columns: auto 1fr auto; gap: 6px; align-items: center; }
+.online button { padding: 6px 10px; }
 </style>
 
 <div id="stage"></div>
@@ -90,7 +96,7 @@ button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px s
     <div class="steps"><span class="pip" id="pip0"></span><span class="pip" id="pip1"></span><div class="recover" id="recover"><i id="recoverBar"></i></div></div>
   </div>
   <div class="card foe">
-    <div class="name">BOT</div>
+    <div class="name" id="foeName">BOT</div>
     <div class="bar hp"><i id="hpFoe"></i></div>
     <div class="row"><span id="hpFoeText">100</span><span>ゲージ <span id="meterFoeText">0.00</span></span></div>
   </div>
@@ -130,6 +136,16 @@ button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px s
           <option value="dummy">的（何もしない）</option>
         </select><span></span></label>
         <div class="status" id="status">起動中…</div>
+        <fieldset class="online" id="onlineBox">
+          <legend>オンライン対戦</legend>
+          <label for="server">サーバー <input id="server" type="url" placeholder="https://…workers.dev" spellcheck="false"></label>
+          <div class="onlineRow">
+            <button id="create" type="button" class="ghost">部屋を作る</button>
+            <input id="room" type="text" placeholder="部屋コード" maxlength="12" autocomplete="off" spellcheck="false">
+            <button id="join" type="button" class="ghost">参加</button>
+          </div>
+          <div class="status" id="onlineStatus">部屋を作ってコードを相手に伝えるか、コードを入れて参加</div>
+        </fieldset>
       </div>
     </div>
     <div class="actions">

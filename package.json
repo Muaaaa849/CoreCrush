@@ -16,7 +16,8 @@
     "test:net": "vitest run tests/net",
     "test:e2e:net": "node scripts/e2e-net.mjs",
     "test:mutation": "node scripts/mutation-check.mjs",
-    "proto:artifact": "node scripts/build-artifact.mjs src/proto/main.ts src/proto/template.html dist-lab/core-crush-proto.html"
+    "proto:artifact": "node scripts/build-artifact.mjs src/proto/main.ts src/proto/template.html dist-lab/core-crush-proto.html --no-online",
+    "proto:pages": "node scripts/proto-pages.mjs"
   },
   "dependencies": {
     "three": "0.186.1"

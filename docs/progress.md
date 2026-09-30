@@ -10,16 +10,18 @@
 |---|---|
 | M0 技術検証 | 完了。WebGPURenderer 採用（暫定、ADR 0001）。ミドルノート PC での再計測は M3 で |
 | M1 ローカルの芯 | 完了（2026-09-30 プレイテスト2回目で「いいと思う」）。コート拡張ほか提案0003を反映済み |
-| M2〜M5 | 未着手 |
+| M2 オンライン | 実装・テスト完了（遅延注入マトリクス緑、実 WebRTC e2e 緑）。**プランナーの Cloudflare デプロイ待ち**（docs/online-setup.md） |
+| M3〜M5 | 未着手 |
 
 ### 公開物（claude.ai Artifact。プランナーはローカルにファイルを持たない）
 - 箱キャラ試作: https://claude.ai/artifact/HZRBvv3kNFYov2Bbpdv8KN（`npm run proto:artifact` → `dist-lab/core-crush-proto.html` を同じパスで再公開すると URL 維持）
+- オンライン対戦: デプロイ後 `https://core-crush-signaling.<サブドメイン>.workers.dev/`（Artifact 版はボット戦のみ）
 - M0 計測ラボ: https://claude.ai/artifact/HjjEjbyddmbB7RVXvD5PDc（結果は db コレクション `m0Results`、ArtifactData で読める）
 
 ### コードの現状
 - `src/sim/`: 固定60Hz。誘導曲線の飛翔（ADR 0002）、投擲・フリ・キャッチ（ジャスト）・跳ね返し・ステップ・8秒カウント・爆発・自動取得・ラウンド。
 - `src/bot/simpleBot.ts`、`src/input/keyboardMouse.ts`、`src/render/{cameraRig,protoView}.ts`、`src/proto/`（試作）。
-- テスト 113 件緑（`npm test`）。感度チェック `npm run test:mutation` は 15 変異すべて赤。`npm run validate:data` OK。
+- テスト 137 件緑（`npm test`。うち `test:net` 22 件）。`npm run test:e2e:net` 緑。感度チェック `npm run test:mutation` は 15 変異すべて赤。`npm run validate:data` OK。
 - hooks: main への push 拒否、既存 `data/balance.json` の変更は ask（`.claude/hooks/guard.mjs`）。
 - harness-forge スキル導入済み（`.claude/skills/harness-forge/`）。
 - ブランチ: `claude/zealous-fermat-dnuy3b`（リモートのデフォルトブランチもこれ）。
@@ -34,8 +36,8 @@
 - 回避方向: ストレート=左右 / 左右カーブ=前後 / 上カーブ=左右（Q-29）。跳ね返しも移動キーで球種を選ぶ（狙い投げ不可）。
 
 ## 作業中
-なし。プレイテスト2回目のフィードバック待ち（確かめてほしいことはログの最新項目）。
-次の候補: M1 の残り（スキル部品・狙い投げの照準補正・ボット強化）→ M2（オンライン）。
+なし。待ち: (1) プランナーの Cloudflare デプロイ（docs/online-setup.md）→ 実回線の対戦テスト、(2) Q-30・提案0003 の確認事項への回答。
+次の候補: M2 の仕上げ（相手の 100ms 補間表示、再戦、切断処理、投げ手側の結果待ちの見せ方）→ M3（見た目）。
 
 ## ログ
 
@@ -120,4 +122,19 @@
 - 見つかったこと: フリ→ストレートの保証は 14m まで（要求13m）。コートの前半分同士でも最大24m離れるので、
   13m を超えると見てから当たるとは限らない → proposals/0003 の「確認事項」。
 - 次: M2（オンライン）。
+
+## 2026-09-30 セッション2（M2: オンライン）
+- やったこと:
+  - ADR 0003 受け手権威: 各クライアントが自分の World を持ち、ボールの判定権（飛翔=受け手、所持=持ち手、転がり=受け渡し）を一か所に保つ。
+    確定イベントにボール状態を同梱、投擲・跳ね返しは発射点から再生。sim 側は `World.local/ballAuth`、`src/sim/judge/remote.ts`。
+  - `src/net/`: バイナリプロトコル、Transport、遅延注入ループバック、NetPeer、WebRTC（negotiated DataChannel）、開始の合意。
+  - `workers/signaling`: 部屋コード=Durable Object の中継、`/ice` で短命 TURN 資格情報、試作ページも配信。
+  - テスト: 遅延注入 9 条件でログ・勝敗一致・判定権の重複 0、フリ→ストレート成立率（160ms で 98.8%、±5% 合格）、決定論、
+    `test:e2e:net`（wrangler dev＋Chromium 2ページで実 WebRTC 越しのボット対戦が一致）。試作にオンライン対戦 UI。
+- 見つかったこと: RTT がネット予算 3F を超えると遠距離のフリ→ストレート保証が崩れる → Q-30。
+  Artifact は外部接続コード入りだと公開時検証で拒否される → Artifact はボット戦のみ、オンラインは Worker 配信。
+- 未実装（M2 の仕上げ）: 相手の 100ms 補間表示（いまは最新の状態をそのまま表示）、再戦、切断後の復帰、
+  投げ手側で球が相手に届いてから結果が来るまで止まって見える（≒RTT）の見せ方、HUD の色（役割1でも自分がシアン表示）。
+- プランナーにお願い: docs/online-setup.md の手順で Worker をデプロイ → 2台（または2つのブラウザ）で対戦し、
+  (1) つながるか、(2) キャッチ・跳ね返しのタイミングが遅延で変わらないか、(3) 相手の動きのカクつき、(4) 自分が投げた球が相手に届いて止まる時間、を確認。
 

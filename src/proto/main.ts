@@ -1,17 +1,21 @@
-// 箱キャラ試作（M1）: 人間（side 0）対ボット（side 1）。sim を固定 60Hz で回し、描画は補間。
+// 箱キャラ試作（M1〜M2）: 人間 対 ボット、またはオンライン対戦（WebRTC・受け手権威）。sim を固定 60Hz で回し、描画は補間。
 import { loadBalance } from '../data/loadBalance';
 import { botInput, createBot, type Bot, type BotProfile } from '../bot/simpleBot';
 import { forwardZ } from '../sim/court';
 import { createWorld, stepWorld } from '../sim/world';
 import { stepRecoverTicks } from '../sim/balance';
-import type { PlayerInput, SimEvent, World } from '../sim/types';
+import { NO_INPUT, type PlayerInput, type Side, type SimEvent, type World } from '../sim/types';
+import type { NetPeer } from '../net/peer';
+import { createMatchStarter } from '../net/session';
+import { connect, type ConnectStatus, type WebRtcTransport } from '../net/webrtc';
 import { KeyboardMouse } from '../input/keyboardMouse';
 import { CameraRig, DEFAULT_CAMERA, type CameraSettings } from '../render/cameraRig';
 import { ProtoView, faceStage } from '../render/protoView';
 
-const ME = 0 as const;
-const FOE = 1 as const;
 const TICK_MS = 1000 / 60;
+/** ビルド時の定数。false（Artifact 版）ではオンライン対戦のコードを含めない */
+declare const __ONLINE__: boolean;
+const ONLINE_ENABLED = typeof __ONLINE__ === 'undefined' ? true : __ONLINE__;
 
 const BOTS: Record<string, BotProfile> = {
   easy: { holdMinTicks: 60, holdMaxTicks: 240, fakeChance: 0.1, catchChance: 0.15, parryChance: 0.15, stepChance: 0.05 },
@@ -49,8 +53,16 @@ async function main(): Promise<void> {
 
   let world!: World;
   let bot!: Bot;
+  // 自分の側（ボット戦は 0。オンラインは部屋での役割）
+  let ME: Side = 0;
+  let FOE: Side = 1;
+  let online: { peer: NetPeer | null; starter: { poll(): NetPeer | null }; transport: WebRtcTransport } | null = null;
+  const foeName = () => (online ? '相手' : 'ボット');
   const rig = new CameraRig();
   const newMatch = () => {
+    if (online) return; // オンラインの再戦は未対応（ページを再読み込み）
+    ME = 0;
+    FOE = 1;
     const seed = (performance.now() * 1000) >>> 0;
     world = createWorld(balance, { seed, stats: [{ attack: 5, defense: 5, agility: 5 }, { attack: 5, defense: 5, agility: 5 }] });
     bot = createBot(FOE, seed ^ 0x5bd1e995, BOTS[botLevel] ?? BOTS.normal!);
@@ -173,17 +185,17 @@ async function main(): Promise<void> {
     $('toasts').append(el);
     setTimeout(() => el.remove(), 900);
   };
-  const who = (side: number) => (side === ME ? 'あなた' : 'ボット');
+  const who = (side: number) => (side === ME ? 'あなた' : foeName());
   const onEvent = (e: SimEvent) => {
     switch (e.kind) {
       case 'justCatch':
-        toast(e.side === ME ? 'JUST CATCH!' : 'ボット ジャスト', e.side === ME ? '#35f2ff' : '#ff2bd6');
+        toast(e.side === ME ? 'JUST CATCH!' : `${foeName()} ジャスト`, e.side === ME ? '#35f2ff' : '#ff2bd6');
         break;
       case 'catch':
-        toast(e.side === ME ? 'CATCH' : 'ボット キャッチ', e.side === ME ? '#35f2ff' : '#ff2bd6');
+        toast(e.side === ME ? 'CATCH' : `${foeName()} キャッチ`, e.side === ME ? '#35f2ff' : '#ff2bd6');
         break;
       case 'parry':
-        toast(`${e.side === ME ? 'PARRY' : 'ボット 跳ね返し'} ${e.label} ${e.value.toFixed(1)} m/s`, '#ffe066');
+        toast(`${e.side === ME ? 'PARRY' : `${foeName()} 跳ね返し`} ${e.label} ${e.value.toFixed(1)} m/s`, '#ffe066');
         break;
       case 'whiffCatch':
         toast(`${who(e.side)} キャッチ空振り`, '#8f9ab2');
@@ -198,7 +210,7 @@ async function main(): Promise<void> {
         toast(`${who(e.side)} 爆発 −${e.value.toFixed(0)}`, '#ffffff');
         break;
       case 'homingCancelled':
-        toast(e.side === ME ? '回避！' : 'ボット 回避', '#e3e9f5');
+        toast(e.side === ME ? '回避！' : `${foeName()} 回避`, '#e3e9f5');
         break;
       case 'roundEnd':
         $('banner').textContent = e.side === -1 ? '相打ち' : e.side === ME ? 'ROUND WIN' : 'ROUND LOSE';
@@ -244,11 +256,84 @@ async function main(): Promise<void> {
       const ball = world.ball;
       $('frames').textContent =
         `あなた  ${me.action} ${me.actionTick}/${me.actionLength || '-'}\n` +
-        `ボット  ${foe.action} ${foe.actionTick}/${foe.actionLength || '-'}\n` +
+        `${foeName()}  ${foe.action} ${foe.actionTick}/${foe.actionLength || '-'}\n` +
         `ボール  ${ball.mode} ${ball.kind} ${ball.speedMps.toFixed(1)}m/s 追尾:${ball.homing ? 'on' : 'off'} ラリー:${ball.rally}\n` +
         `カウント ${ball.countTicks}F 停止 ${ball.freezeTicks}F　描画 ${view.backend}`;
     }
   };
+
+  // --- オンライン ---
+  /** 1 tick 進める。試合がまだ始まっていなければ false */
+  const stepOnline = (a: PlayerInput): boolean => {
+    if (!online) return false;
+    if (!online.peer) {
+      online.peer = online.starter.poll();
+      if (!online.peer) return false;
+      world = online.peer.w;
+      view.snapshot(world);
+      view.snapshot(world);
+      $('banner').textContent = '';
+      $('onlineStatus').textContent = `対戦中（あなたは ${ME === 0 ? 'シアン' : 'マゼンタ'}）`;
+    }
+    online.peer.step(a);
+    for (let i = 0; i < world.eventCount; i++) onEvent(world.events[i]!);
+    view.snapshot(world);
+    return true;
+  };
+  const STATUS_TEXT: Record<ConnectStatus, string> = {
+    ice: '接続情報を取得中…', signaling: 'シグナリングに接続中…', waiting: '相手を待っています…', negotiating: '相手と接続中…', open: '接続しました',
+  };
+  if (!ONLINE_ENABLED) $('onlineBox').hidden = true;
+  const serverIn = $<HTMLInputElement>('server');
+  const roomIn = $<HTMLInputElement>('room');
+  const q = new URLSearchParams(location.search);
+  // Worker から配られたページ（workers.dev・ローカル）は同じオリジンがシグナリングサーバー
+  const sameOrigin = /(\.workers\.dev|^localhost|^127\.0\.0\.1)$/.test(location.hostname) ? location.origin : '';
+  serverIn.value = q.get('server') ?? store<string>('cc.server', sameOrigin);
+  roomIn.value = q.get('room') ?? '';
+  const joinOnline = async (room: string) => {
+    if (!ONLINE_ENABLED) return;
+    const server = serverIn.value.trim();
+    if (!server) {
+      $('onlineStatus').textContent = 'シグナリングサーバーの URL を入れてください';
+      return;
+    }
+    save('cc.server', server);
+    roomIn.value = room;
+    $('join').setAttribute('disabled', '');
+    $('create').setAttribute('disabled', '');
+    try {
+      const { transport, role } = await connect({ serverUrl: server, room, onStatus: (st) => ($('onlineStatus').textContent = `部屋 ${room}: ${STATUS_TEXT[st]}`) });
+      ME = role;
+      FOE = role === 0 ? 1 : 0;
+      rig.reset(ME);
+      online = { peer: null, transport, starter: createMatchStarter(transport, { balance, role, stats: [{ attack: 5, defense: 5, agility: 5 }, { attack: 5, defense: 5, agility: 5 }] }) };
+      transport.onClose = () => {
+        $('banner').textContent = '相手との接続が切れました — ページを再読み込みしてください';
+      };
+      $('onlineStatus').textContent = `部屋 ${room}: 接続しました。クリックで開始`;
+      botSel.disabled = true;
+      $('foeName').textContent = 'RIVAL';
+      $('restart').hidden = true;
+    } catch (e) {
+      $('onlineStatus').textContent = `接続できませんでした: ${e instanceof Error ? e.message : String(e)}`;
+      $('join').removeAttribute('disabled');
+      $('create').removeAttribute('disabled');
+    }
+  };
+  $('create').addEventListener('click', () => {
+    const abc = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    const r = crypto.getRandomValues(new Uint8Array(5));
+    void joinOnline(Array.from(r, (v) => abc[v % abc.length]).join(''));
+  });
+  $('join').addEventListener('click', () => {
+    const room = roomIn.value.trim().toUpperCase();
+    if (!/^[A-Z0-9]{4,12}$/.test(room)) {
+      $('onlineStatus').textContent = '部屋コードは英数字4〜12文字です';
+      return;
+    }
+    void joinOnline(room);
+  });
 
   // --- ループ（固定 60Hz） ---
   let last = performance.now();
@@ -263,8 +348,12 @@ async function main(): Promise<void> {
       let steps = 0;
       while (acc >= TICK_MS && steps < 5) {
         const a = humanInput();
-        const bIn = { ...botInput(world, bot) };
-        stepWorld(world, [a, bIn]);
+        if (online) {
+          if (!stepOnline(a)) break;
+        } else {
+          const bIn = { ...botInput(world, bot) };
+          stepWorld(world, [a, bIn]);
+        }
         for (let i = 0; i < world.eventCount; i++) onEvent(world.events[i]!);
         view.snapshot(world);
         acc -= TICK_MS;
@@ -273,9 +362,19 @@ async function main(): Promise<void> {
       if (steps === 5) acc = 0;
     } else {
       input.takeMouse();
-      acc = 0;
+      // オンラインは一時停止できない（ロックが外れていても無入力で進める）
+      if (online) {
+        acc += dt;
+        let steps = 0;
+        while (acc >= TICK_MS && steps < 5) {
+          if (!stepOnline({ ...NO_INPUT })) break;
+          acc -= TICK_MS;
+          steps++;
+        }
+        if (steps === 5) acc = 0;
+      } else acc = 0;
     }
-    const alpha = input.locked ? acc / TICK_MS : 1;
+    const alpha = input.locked || online?.peer ? acc / TICK_MS : 1;
     const me = world.players[ME];
     const pos = view.playerPos(ME, alpha);
     rig.update(dt, pos, CameraRig.wantsFps(me), input.secondaryHeld && me.holding, settings, balance);
