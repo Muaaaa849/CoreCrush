@@ -51,7 +51,8 @@ src/input/      キーバインド（KeyboardEvent.code）、Pointer Lock
 src/ui/         HUD、設定画面
 data/           balance.json, characters/, skills/, vfx/（数値の唯一の置き場）
 workers/signaling/  Worker + Durable Objects
-tests/          sim/, net/, e2e/    bench/  性能計測
+tests/          sim/, net/, e2e/    bench/  性能計測（run-m0.mjs, results/）
+src/m0/         M0 技術検証ページ（使い捨て。本番コードから import しない）
 docs/gdd/ docs/decisions/ docs/proposals/ docs/playtest/ docs/progress.md
 ```
 
@@ -66,8 +67,9 @@ docs/gdd/ docs/decisions/ docs/proposals/ docs/playtest/ docs/progress.md
 - 乱数は sim 内のシード付き RNG のみ。試合中の `new`（オブジェクト生成）はプールで避ける。
 
 ## コマンド（予定。package.json 作成時に実体と一致させる）
-- `npm run dev` / `npm test` / `npm run test:sim` / `npm run test:net`
-- `npm run bench` / `npm run validate:data` / `npm run typecheck` / `npm run lint`
+- 実在: `npm run dev` / `npm run build` / `npm run typecheck` / `npm test` / `npm run m0:headless`
+- 予定: `npm run test:sim` / `npm run test:net` / `npm run bench` / `npm run validate:data` / `npm run lint`
+- クラウドで Playwright を使うときは `CHROMIUM_PATH=/opt/pw-browsers/chromium`（`playwright install` はしない）
 
 ## 作業の流れ
 1. 関連する GDD 章・invariants.md・ADR・open-questions.md を読む。
