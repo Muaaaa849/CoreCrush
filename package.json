@@ -9,7 +9,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "preview": "vite preview",
-    "m0:headless": "vite build && node bench/run-m0.mjs"
+    "m0:headless": "vite build && node bench/run-m0.mjs",
+    "m0:lab": "vite build --config src/m0/lab/vite.lab.config.ts && node src/m0/lab/assemble.mjs"
   },
   "dependencies": {
     "three": "0.186.1"

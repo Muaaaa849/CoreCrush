@@ -6,49 +6,60 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { SMAAPass } from 'three/addons/postprocessing/SMAAPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { buildBenchScene, BENCH_WIDTH, BENCH_HEIGHT } from './benchScene';
-import { runBench, publish } from './benchRunner';
+import { buildBenchScene, countSceneDrawCalls, BENCH_WIDTH, BENCH_HEIGHT } from './benchScene';
+import { runBench, type BenchOptions, type BenchResult } from './benchRunner';
 
-async function main(): Promise<void> {
+export async function runWebGLBench(
+  host: HTMLElement,
+  options?: BenchOptions,
+  onProgress?: (done: number, total: number) => void,
+): Promise<BenchResult> {
   const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: 'high-performance' });
-  renderer.setPixelRatio(1);
-  renderer.setSize(BENCH_WIDTH, BENCH_HEIGHT, false);
-  renderer.shadowMap.enabled = true;
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 0.9;
-  renderer.info.autoReset = false;
-  document.body.appendChild(renderer.domElement);
-
-  const bench = buildBenchScene(THREE);
   const composer = new EffectComposer(renderer);
-  composer.setSize(BENCH_WIDTH, BENCH_HEIGHT);
-  composer.addPass(new RenderPass(bench.scene, bench.camera));
-  // しきい値高めで emissive だけを光らせる近似
-  composer.addPass(new UnrealBloomPass(new THREE.Vector2(BENCH_WIDTH, BENCH_HEIGHT), 1.0, 0.4, 0.9));
-  composer.addPass(new SMAAPass());
-  composer.addPass(new OutputPass());
+  try {
+    renderer.setPixelRatio(1);
+    renderer.setSize(BENCH_WIDTH, BENCH_HEIGHT, false);
+    renderer.shadowMap.enabled = true;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 0.9;
+    renderer.info.autoReset = false;
+    host.appendChild(renderer.domElement);
 
-  const gl = renderer.getContext();
-  const pixel = new Uint8Array(4);
-  const result = await runBench(
-    {
-      renderer: 'WebGLRenderer',
-      backend: 'webgl2',
-      renderFrame(t) {
-        renderer.info.reset();
-        bench.update(t);
-        composer.render();
+    const bench = buildBenchScene(THREE);
+    composer.setSize(BENCH_WIDTH, BENCH_HEIGHT);
+    composer.addPass(new RenderPass(bench.scene, bench.camera));
+    // しきい値高めで emissive だけを光らせる近似
+    composer.addPass(new UnrealBloomPass(new THREE.Vector2(BENCH_WIDTH, BENCH_HEIGHT), 1.0, 0.4, 0.9));
+    composer.addPass(new SMAAPass());
+    composer.addPass(new OutputPass());
+
+    const gl = renderer.getContext();
+    const pixel = new Uint8Array(4);
+    const result = await runBench(
+      {
+        renderer: 'WebGLRenderer',
+        backend: 'webgl2',
+        renderFrame(t) {
+          renderer.info.reset();
+          bench.update(t);
+          composer.render();
+        },
+        async waitGpu() {
+          gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixel);
+        },
+        stats: () => ({ drawCalls: renderer.info.render.calls, triangles: renderer.info.render.triangles }),
+        sceneDrawCalls: () => countSceneDrawCalls(THREE, bench.scene, bench.camera),
       },
-      async waitGpu() {
-        gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixel);
-      },
-      stats: () => ({ drawCalls: renderer.info.render.calls, triangles: renderer.info.render.triangles }),
-    },
-    BENCH_WIDTH,
-    BENCH_HEIGHT,
-  );
-  result.note = 'EffectComposer + UnrealBloomPass + SMAAPass（pmndrs ではない）';
-  publish(result);
+      BENCH_WIDTH,
+      BENCH_HEIGHT,
+      options,
+      onProgress,
+    );
+    result.note = 'EffectComposer + UnrealBloomPass + SMAAPass（pmndrs ではない）';
+    return result;
+  } finally {
+    renderer.domElement.remove();
+    composer.dispose();
+    renderer.dispose();
+  }
 }
-
-main().catch((e: unknown) => publish({ error: String(e) }));

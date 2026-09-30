@@ -52,7 +52,7 @@ src/ui/         HUD、設定画面
 data/           balance.json, characters/, skills/, vfx/（数値の唯一の置き場）
 workers/signaling/  Worker + Durable Objects
 tests/          sim/, net/, e2e/    bench/  性能計測（run-m0.mjs, results/）
-src/m0/         M0 技術検証ページ（使い捨て。本番コードから import しない）
+src/m0/         M0 技術検証ページ（使い捨て。本番コードから import しない）。lab/ は実機計測用 Artifact
 docs/gdd/ docs/decisions/ docs/proposals/ docs/playtest/ docs/progress.md
 ```
 

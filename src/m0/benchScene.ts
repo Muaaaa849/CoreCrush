@@ -129,3 +129,20 @@ export function buildBenchScene(THREE: T): BenchScene {
     },
   };
 }
+
+// シーン本体のドローコール数（GDD 12.3 の予算対象）: 視錐台内の可視 Mesh 数。
+// 影パス・ポストの全画面パスは含まない。マルチマテリアルはグループ数で数える。
+export function countSceneDrawCalls(THREE: T, scene: ThreeNS.Scene, camera: ThreeNS.Camera): number {
+  camera.updateMatrixWorld();
+  const frustum = new THREE.Frustum().setFromProjectionMatrix(
+    new THREE.Matrix4().multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse),
+  );
+  let count = 0;
+  scene.traverseVisible((o) => {
+    const mesh = o as ThreeNS.Mesh;
+    if (!mesh.isMesh) return;
+    if (mesh.frustumCulled && !(mesh as ThreeNS.InstancedMesh).isInstancedMesh && !frustum.intersectsObject(mesh)) return;
+    count += Array.isArray(mesh.material) ? Math.max(1, mesh.geometry.groups.length) : 1;
+  });
+  return count;
+}
