@@ -1,4 +1,4 @@
-// 通信対戦の1台分。自分側の World を固定 60Hz で進め、確定イベントと状態を送り、相手のものを反映する。
+// 通信対戦の1台分（1試合ぶん）。自分側の World を固定 60Hz で進め、確定イベントと状態を送り、相手のものを反映する。
 // net 層は運搬と権威の受け渡しだけ。判定は sim（src/sim/judge）で行う（netcode 規則）。
 import type { Balance } from '../sim/balance';
 import {
@@ -8,10 +8,13 @@ import {
 import { NO_INPUT, type PlayerInput, type Side, type World } from '../sim/types';
 import { createWorld, stepWorld, type WorldOptions } from '../sim/world';
 import { STATE_REDUNDANCY, decode, encodeEvent, encodeState, plausibleEvent } from './protocol';
+import { REMOTE_INTERP_DELAY_F, RemoteTrack } from './remoteTrack';
 import type { Transport } from './transport';
 
 export interface PeerOptions extends Omit<WorldOptions, 'local'> {
   local: Side;
+  /** 試合番号（再戦ごとに増える。違う番号のメッセージは捨てる）。省略時 0 */
+  match?: number;
 }
 
 /** 確定イベントログの1行（両クライアントで一致すること。GDD 11.3 必須テスト） */
@@ -31,7 +34,10 @@ export class NetPeer {
   readonly w: World;
   readonly local: Side;
   readonly remote: Side;
+  readonly match: number;
   readonly log: LogEntry[] = [];
+  /** 相手から最後に何か届いた自分の tick（無応答の検出用） */
+  lastHeardTick = 0;
   /** 相手のイベントのうち、まだ反映していないもの（ラウンドの先行分） */
   private pendingEvents: AuthEvent[] = [];
   private nextRemoteSeq = 0;
@@ -39,14 +45,24 @@ export class NetPeer {
   private sentStates: RemoteState[] = [];
   private lastRemoteStateTick = -1;
   private inputs: [PlayerInput, PlayerInput] = [NO_INPUT, NO_INPUT];
+  /** 相手の位置の補間表示用（表示専用） */
+  private track = new RemoteTrack();
+  private trackRound = -1;
 
   constructor(balance: Balance, opts: PeerOptions, private transport: Transport) {
     this.local = opts.local;
     this.remote = opts.local === 0 ? 1 : 0;
+    this.match = (opts.match ?? 0) & 0xff;
     this.w = createWorld(balance, { ...opts, local: opts.local });
   }
 
-  /** 1 tick 進める。戻り値のイベントはこの tick に起きたもの（自分の判定＋相手から届いた確定） */
+  /** 相手の表示位置（100ms 補間）。alpha は描画の tick 内の割合。履歴がなければ false */
+  remoteDisplayPos(alpha: number, out: { x: number; z: number }): boolean {
+    if (this.w.phase !== 'play') return false;
+    return this.track.sample(this.w.tick + alpha, REMOTE_INTERP_DELAY_F, out);
+  }
+
+  /** 1 tick 進める */
   step(input: PlayerInput): void {
     const w = this.w;
     this.inputs[this.local] = input;
@@ -63,14 +79,14 @@ export class NetPeer {
         seq: this.seq++, tick: w.tick, round: w.round, kind: e.kind, side: e.side, value: e.value, hp,
         ballAuth: w.ballAuth, ball: captureBall(w, createBallWire()),
       };
-      this.transport.send('event', encodeEvent(ev));
+      this.transport.send('event', encodeEvent(this.match, ev));
       this.record(this.local, ev);
     }
 
     // 状態（直近を冗長同梱）
     this.sentStates.unshift(captureState(w, {} as RemoteState));
     if (this.sentStates.length > STATE_REDUNDANCY) this.sentStates.length = STATE_REDUNDANCY;
-    this.transport.send('state', encodeState(this.sentStates));
+    this.transport.send('state', encodeState(this.match, this.sentStates));
 
     this.receive();
   }
@@ -83,7 +99,8 @@ export class NetPeer {
     const w = this.w;
     for (const buf of this.transport.poll('event')) {
       const m = decode(buf);
-      if (m.type !== 'event') continue;
+      if (m.type !== 'event' || m.match !== this.match) continue;
+      this.lastHeardTick = w.tick;
       const ev = m.event;
       if (ev.seq !== this.nextRemoteSeq) throw new Error(`net: event seq ${ev.seq} != ${this.nextRemoteSeq}（信頼チャネルの順序が壊れた）`);
       this.nextRemoteSeq++;
@@ -103,10 +120,21 @@ export class NetPeer {
       applyAuthEvent(w, ev);
     }
 
+    if (this.trackRound !== w.round) {
+      // ラウンドが変わると位置が飛ぶので補間の履歴を捨てる
+      this.track.reset();
+      this.trackRound = w.round;
+    }
     let newest: RemoteState | null = null;
     for (const buf of this.transport.poll('state')) {
       const m = decode(buf);
-      if (m.type !== 'state') continue;
+      if (m.type !== 'state' || m.match !== this.match) continue;
+      this.lastHeardTick = w.tick;
+      // 冗長同梱は古い順に入れる（補間の履歴を埋める）
+      for (let i = m.states.length - 1; i >= 0; i--) {
+        const s = m.states[i]!;
+        if (s.round === w.round) this.track.push(s.tick, s.x, s.z, w.tick);
+      }
       for (const s of m.states) if (s.tick > this.lastRemoteStateTick && (!newest || s.tick > newest.tick)) newest = s;
     }
     if (newest && newest.round === w.round && w.phase === 'play') {

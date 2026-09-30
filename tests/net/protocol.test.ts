@@ -11,9 +11,10 @@ describe('プロトコル', () => {
     giveBall(w, 0);
     run(w, 12, (t) => [t === 0 ? { primary: true, moveRight: 1 } : {}]);
     const ev: AuthEvent = { seq: 7, tick: w.tick, round: 1, kind: 'release', side: 0, value: Math.PI, hp: NaN, ballAuth: 1, ball: captureBall(w, createBallWire()) };
-    const m = decode(encodeEvent(ev));
+    const m = decode(encodeEvent(3, ev));
     expect(m.type).toBe('event');
     if (m.type !== 'event') return;
+    expect(m.match).toBe(3);
     expect(m.event.hp).toBeNaN();
     expect({ ...m.event, hp: 0 }).toEqual({ ...ev, hp: 0 });
   });
@@ -24,14 +25,14 @@ describe('プロトコル', () => {
       run(w, 1);
       states.unshift(captureState({ ...w, local: 0 }, {} as RemoteState));
     }
-    const m = decode(encodeState(states));
+    const m = decode(encodeState(0, states));
     expect(m.type).toBe('state');
     if (m.type !== 'state') return;
     expect(m.states.length).toBe(STATE_REDUNDANCY);
     expect(m.states.map((s) => s.tick)).toEqual(states.slice(0, STATE_REDUNDANCY).map((s) => s.tick));
   });
   it('版数が違うメッセージは拒否する', () => {
-    const buf = encodeState([]);
+    const buf = encodeState(0, []);
     new DataView(buf).setUint8(0, PROTOCOL_VERSION + 1);
     expect(() => decode(buf)).toThrow();
   });

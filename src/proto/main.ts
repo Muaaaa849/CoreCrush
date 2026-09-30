@@ -5,14 +5,15 @@ import { forwardZ } from '../sim/court';
 import { createWorld, stepWorld } from '../sim/world';
 import { stepRecoverTicks } from '../sim/balance';
 import { NO_INPUT, type PlayerInput, type Side, type SimEvent, type World } from '../sim/types';
-import type { NetPeer } from '../net/peer';
-import { createMatchStarter } from '../net/session';
+import { OnlineSession } from '../net/session';
 import { connect, type ConnectStatus, type WebRtcTransport } from '../net/webrtc';
 import { KeyboardMouse } from '../input/keyboardMouse';
 import { CameraRig, DEFAULT_CAMERA, type CameraSettings } from '../render/cameraRig';
 import { ProtoView, faceStage } from '../render/protoView';
 
 const TICK_MS = 1000 / 60;
+/** オンラインで相手から何も届かないとき、警告を出すまでの秒数（表示のみ） */
+const SILENCE_WARN_SEC = 3;
 /** ビルド時の定数。false（Artifact 版）ではオンライン対戦のコードを含めない */
 declare const __ONLINE__: boolean;
 const ONLINE_ENABLED = typeof __ONLINE__ === 'undefined' ? true : __ONLINE__;
@@ -56,7 +57,8 @@ async function main(): Promise<void> {
   // 自分の側（ボット戦は 0。オンラインは部屋での役割）
   let ME: Side = 0;
   let FOE: Side = 1;
-  let online: { peer: NetPeer | null; starter: { poll(): NetPeer | null }; transport: WebRtcTransport } | null = null;
+  let online: { session: OnlineSession; transport: WebRtcTransport } | null = null;
+  let silenceShown = false;
   const foeName = () => (online ? '相手' : 'ボット');
   const rig = new CameraRig();
   const newMatch = () => {
@@ -140,7 +142,10 @@ async function main(): Promise<void> {
       showFrames = !showFrames;
       $('frames').hidden = !showFrames;
     }
-    if (code === 'KeyR' && world.phase === 'matchOver') newMatch();
+    if (code === 'KeyR' && world.phase === 'matchOver') {
+      if (online) online.session.requestRematch();
+      else newMatch();
+    }
   };
   $('status').textContent = `描画: ${view.backend}　準備完了`;
 
@@ -266,18 +271,36 @@ async function main(): Promise<void> {
   /** 1 tick 進める。試合がまだ始まっていなければ false */
   const stepOnline = (a: PlayerInput): boolean => {
     if (!online) return false;
-    if (!online.peer) {
-      online.peer = online.starter.poll();
-      if (!online.peer) return false;
-      world = online.peer.w;
+    const s = online.session;
+    s.pump();
+    if (s.peer && s.peer.w !== world) {
+      // 新しい試合（最初の試合・再戦）
+      world = s.peer.w;
+      rig.reset(ME);
       view.snapshot(world);
       view.snapshot(world);
       $('banner').textContent = '';
-      $('onlineStatus').textContent = `対戦中（あなたは ${ME === 0 ? 'シアン' : 'マゼンタ'}）`;
+      $('onlineStatus').textContent = `対戦中（第${s.match + 1}試合・あなたは ${ME === 0 ? 'シアン' : 'マゼンタ'}）`;
     }
-    online.peer.step(a);
+    const peer = s.peer;
+    if (!peer) return false;
+    peer.step(a);
     for (let i = 0; i < world.eventCount; i++) onEvent(world.events[i]!);
     view.snapshot(world);
+    // 相手から一定時間なにも届かない（切断を検出できない経路もあるので時間でも見る）
+    const silentSec = (world.tick - peer.lastHeardTick) / world.balance.tickHz;
+    if (!online.transport.closed && world.tick > 3 * world.balance.tickHz && silentSec > SILENCE_WARN_SEC) {
+      $('banner').textContent = `相手の応答がありません（${Math.floor(silentSec)}秒）`;
+      silenceShown = true;
+    } else if (silenceShown && silentSec <= SILENCE_WARN_SEC) {
+      $('banner').textContent = '';
+      silenceShown = false;
+    }
+    if (world.phase === 'matchOver' && s.localWants >= 0) {
+      $('banner').textContent = s.remoteWants === s.localWants ? '再戦を開始します…' : '再戦を希望しました — 相手を待っています';
+    } else if (world.phase === 'matchOver' && s.remoteWants >= 0) {
+      $('banner').textContent = '相手が再戦を希望しています — R で再戦';
+    }
     return true;
   };
   const STATUS_TEXT: Record<ConnectStatus, string> = {
@@ -307,7 +330,7 @@ async function main(): Promise<void> {
       ME = role;
       FOE = role === 0 ? 1 : 0;
       rig.reset(ME);
-      online = { peer: null, transport, starter: createMatchStarter(transport, { balance, role, stats: [{ attack: 5, defense: 5, agility: 5 }, { attack: 5, defense: 5, agility: 5 }] }) };
+      online = { transport, session: new OnlineSession(transport, { balance, role, stats: [{ attack: 5, defense: 5, agility: 5 }, { attack: 5, defense: 5, agility: 5 }] }) };
       transport.onClose = () => {
         $('banner').textContent = '相手との接続が切れました — ページを再読み込みしてください';
       };
@@ -338,6 +361,7 @@ async function main(): Promise<void> {
   });
 
   // --- ループ（固定 60Hz） ---
+  const foePos = { x: 0, z: 0 };
   let last = performance.now();
   let acc = 0;
   const frame = (now: number) => {
@@ -376,11 +400,13 @@ async function main(): Promise<void> {
         if (steps === 5) acc = 0;
       } else acc = 0;
     }
-    const alpha = input.locked || online?.peer ? acc / TICK_MS : 1;
+    const onlinePeer = online?.session.peer ?? null;
+    const alpha = input.locked || onlinePeer ? acc / TICK_MS : 1;
     const me = world.players[ME];
     const pos = view.playerPos(ME, alpha);
     rig.update(dt, pos, CameraRig.wantsFps(me), input.secondaryHeld && me.holding, settings, balance);
-    view.render(world, alpha, rig, ME, now);
+    const foeDisplay = onlinePeer && onlinePeer.remoteDisplayPos(alpha, foePos) ? foePos : null;
+    view.render(world, alpha, rig, ME, now, foeDisplay);
     updateHud();
     requestAnimationFrame(frame);
   };

@@ -1,9 +1,8 @@
 // e2e: 実際の WebRTC（ローカルのシグナリング経由）で2ページがボット対戦し、確定イベントログを返す
 import { DEFAULT_BOT, botInput, createBot } from '../../src/bot/simpleBot';
 import { loadBalance } from '../../src/data/loadBalance';
-import { createMatchStarter } from '../../src/net/session';
+import { OnlineSession } from '../../src/net/session';
 import { connect } from '../../src/net/webrtc';
-import type { NetPeer } from '../../src/net/peer';
 import { logKey, MEDIAN } from '../net/harness';
 
 declare global {
@@ -21,15 +20,15 @@ async function main(): Promise<void> {
 try {
   const { transport, role } = await connect({ serverUrl: server, room, onStatus: (s) => (status.textContent = s) });
   const balance = loadBalance();
-  const starter = createMatchStarter(transport, { balance, role, stats: [MEDIAN, MEDIAN] });
+  const session = new OnlineSession(transport, { balance, role, stats: [MEDIAN, MEDIAN] });
   const bot = createBot(role, 100 + role, DEFAULT_BOT);
-  let peer: NetPeer | null = null;
   let ticks = 0;
   let after = 0;
   const rounds: number[] = [];
   const timer = setInterval(() => {
     for (let k = 0; k < 4; k++) {
-      peer ??= starter.poll();
+      session.pump();
+      const peer = session.peer;
       if (!peer) return;
       peer.step(botInput(peer.w, bot));
       ticks++;

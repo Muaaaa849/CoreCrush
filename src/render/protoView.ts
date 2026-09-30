@@ -205,11 +205,17 @@ export class ProtoView {
     mat.emissiveIntensity = intensity;
   }
 
-  render(w: World, alpha: number, cam: { pos: { x: number; y: number; z: number }; fov: number; yaw: number; pitch: number; blend: number }, me: 0 | 1, timeMs: number): void {
+  /**
+   * @param foeDisplay 通信対戦で相手を補間表示する位置（null なら sim の位置）。相手が持つ球もこれに合わせる
+   */
+  render(
+    w: World, alpha: number, cam: { pos: { x: number; y: number; z: number }; fov: number; yaw: number; pitch: number; blend: number },
+    me: 0 | 1, timeMs: number, foeDisplay: { x: number; z: number } | null = null,
+  ): void {
     const b = w.balance;
     for (const pl of w.players) {
       const m = this.players[pl.side]!;
-      const pp = this.playerPos(pl.side, alpha);
+      const pp = pl.side !== me && foeDisplay ? foeDisplay : this.playerPos(pl.side, alpha);
       m.position.x = pp.x;
       m.position.z = pp.z;
       // 自分は FPS のとき隠す。相手は常に自分の方を向く
@@ -239,7 +245,12 @@ export class ProtoView {
     const hy = cam.pos.y + f.y * HELD_FORWARD_M - HELD_DOWN_M;
     const hz = cam.pos.z + f.z * HELD_FORWARD_M + r.z * HELD_RIGHT_M;
     const justThrown = w.ball.mode === 'flight' && w.ball.thrower === me && w.ball.u < RELEASE_BLEND_U;
+    const heldByFoe = w.ball.mode === 'held' && w.ball.holder !== me && w.ball.holder !== -1;
     if (heldByMe && cam.blend > 0.5) this.ball.position.set(hx, hy, hz);
+    else if (heldByFoe && foeDisplay) {
+      const fz = w.ball.holder === 0 ? 1 : -1;
+      this.ball.position.set(foeDisplay.x, b.player.handHeightM, foeDisplay.z + fz * b.player.handForwardM);
+    }
     else if (justThrown && cam.blend > 0.5) {
       const k = w.ball.u / RELEASE_BLEND_U;
       this.ball.position.set(hx + (bx - hx) * k, hy + (by - hy) * k, hz + (bz - hz) * k);

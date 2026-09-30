@@ -1,15 +1,19 @@
 // DataChannel のメッセージ（バイナリ・固定レイアウト、リトルエンディアン）。スキーマを変えたら PROTOCOL_VERSION を上げる。
+// 共通の先頭: [版数 u8][種類 u8][試合番号 u8]。試合番号が違うもの（前の試合の遅れて届いた分）は捨てる。
 // - state（非信頼）: 自分の状態。直近 STATE_REDUNDANCY 件を冗長同梱（GDD 11.2）
 // - event（信頼）: 判定権を持つ側が確定させたイベント＋その時点のボール状態
+// - hello（信頼）: 試合開始の合意（役割 0 → 1）。rematch（信頼）: 再戦の希望
 import type { ThrowTypeName } from '../sim/balance';
 import { AUTH_EVENT_KINDS, createBallWire, type AuthEvent, type AuthEventKind, type RemoteState } from '../sim/judge/remote';
 import type { Action, BallMode, Side } from '../sim/types';
 
-export const PROTOCOL_VERSION = 1;
+export const PROTOCOL_VERSION = 2;
 export const STATE_REDUNDANCY = 4;
 const MSG_STATE = 1;
 const MSG_EVENT = 2;
 const MSG_HELLO = 3;
+const MSG_REMATCH = 4;
+const HEADER_BYTES = 3;
 
 const ACTIONS: readonly Action[] = [
   'idle', 'windup', 'fakeWindup', 'throwRecovery', 'fakeRecovery', 'catch', 'catchRecovery',
@@ -19,8 +23,8 @@ const MODES: readonly BallMode[] = ['held', 'flight', 'linear', 'loose'];
 const THROW_TYPES: readonly ThrowTypeName[] = ['straight', 'curveLeft', 'curveRight', 'lob', 'aimed'];
 
 const STATE_ENTRY_BYTES = 4 + 2 + 4 + 4 + 1 + 2 + 2 + 4 + 1 + 4 + 2;
-const STATE_HEADER_BYTES = 3;
-const EVENT_BYTES = 2 + 4 + 4 + 2 + 1 + 1 + 8 + 8 + 1 + (1 + 1 + 1 + 8 * 3 + 8 * 3 + 2 + 2 + 1 + 1 + 1 + 8 + 8 + 8 * 3 + 8 * 3 + 8 + 8 + 1 + 2 + 1);
+const STATE_HEADER_BYTES = HEADER_BYTES + 1;
+const EVENT_BYTES = HEADER_BYTES + 4 + 4 + 2 + 1 + 1 + 8 + 8 + 1 + (1 + 1 + 1 + 8 * 3 + 8 * 3 + 2 + 2 + 1 + 1 + 1 + 8 + 8 + 8 * 3 + 8 * 3 + 8 + 8 + 1 + 2 + 1);
 
 function idx<T>(list: readonly T[], v: T): number {
   const i = list.indexOf(v);
@@ -39,25 +43,52 @@ export interface Hello {
   seed: number;
 }
 
-export type Decoded = { type: 'state'; states: RemoteState[] } | { type: 'event'; event: AuthEvent } | { type: 'hello'; hello: Hello };
+export type MessageType = 'state' | 'event' | 'hello' | 'rematch';
 
-export function encodeHello(h: Hello): ArrayBuffer {
-  const buf = new ArrayBuffer(6);
-  const d = new DataView(buf);
+export type Decoded =
+  | { type: 'state'; match: number; states: RemoteState[] }
+  | { type: 'event'; match: number; event: AuthEvent }
+  | { type: 'hello'; match: number; hello: Hello }
+  | { type: 'rematch'; match: number };
+
+function header(d: DataView, type: number, match: number): void {
   d.setUint8(0, PROTOCOL_VERSION);
-  d.setUint8(1, MSG_HELLO);
-  d.setUint32(2, h.seed >>> 0, true);
+  d.setUint8(1, type);
+  d.setUint8(2, match & 0xff);
+}
+
+/** 先頭だけ読む（振り分け用） */
+export function peek(buf: ArrayBuffer): { type: MessageType; match: number } {
+  const d = new DataView(buf);
+  if (d.getUint8(0) !== PROTOCOL_VERSION) throw new Error(`protocol: version ${d.getUint8(0)} != ${PROTOCOL_VERSION}`);
+  const t = d.getUint8(1);
+  const type: MessageType | null = t === MSG_STATE ? 'state' : t === MSG_EVENT ? 'event' : t === MSG_HELLO ? 'hello' : t === MSG_REMATCH ? 'rematch' : null;
+  if (!type) throw new Error(`protocol: unknown message ${t}`);
+  return { type, match: d.getUint8(2) };
+}
+
+export function encodeHello(match: number, h: Hello): ArrayBuffer {
+  const buf = new ArrayBuffer(HEADER_BYTES + 4);
+  const d = new DataView(buf);
+  header(d, MSG_HELLO, match);
+  d.setUint32(HEADER_BYTES, h.seed >>> 0, true);
+  return buf;
+}
+
+/** match は「次に遊びたい試合番号」 */
+export function encodeRematch(match: number): ArrayBuffer {
+  const buf = new ArrayBuffer(HEADER_BYTES);
+  header(new DataView(buf), MSG_REMATCH, match);
   return buf;
 }
 
 /** states は新しい順に最大 STATE_REDUNDANCY 件 */
-export function encodeState(states: readonly RemoteState[]): ArrayBuffer {
+export function encodeState(match: number, states: readonly RemoteState[]): ArrayBuffer {
   const n = Math.min(states.length, STATE_REDUNDANCY);
   const buf = new ArrayBuffer(STATE_HEADER_BYTES + n * STATE_ENTRY_BYTES);
   const d = new DataView(buf);
-  d.setUint8(0, PROTOCOL_VERSION);
-  d.setUint8(1, MSG_STATE);
-  d.setUint8(2, n);
+  header(d, MSG_STATE, match);
+  d.setUint8(HEADER_BYTES, n);
   let o = STATE_HEADER_BYTES;
   for (let i = 0; i < n; i++) {
     const s = states[i]!;
@@ -76,16 +107,16 @@ export function encodeState(states: readonly RemoteState[]): ArrayBuffer {
   return buf;
 }
 
-export function encodeEvent(e: AuthEvent): ArrayBuffer {
+export function encodeEvent(match: number, e: AuthEvent): ArrayBuffer {
   const buf = new ArrayBuffer(EVENT_BYTES);
   const d = new DataView(buf);
-  let o = 0;
+  header(d, MSG_EVENT, match);
+  let o = HEADER_BYTES;
   const u8 = (v: number) => { d.setUint8(o, v); o += 1; };
   const i8 = (v: number) => { d.setInt8(o, v); o += 1; };
   const u16 = (v: number) => { d.setUint16(o, v, true); o += 2; };
   const u32 = (v: number) => { d.setUint32(o, v, true); o += 4; };
   const f64 = (v: number) => { d.setFloat64(o, v, true); o += 8; };
-  u8(PROTOCOL_VERSION); u8(MSG_EVENT);
   u32(e.seq); u32(e.tick); u16(e.round);
   u8(idx(AUTH_EVENT_KINDS, e.kind)); i8(e.side);
   f64(e.value); f64(e.hp); i8(e.ballAuth);
@@ -106,15 +137,16 @@ export function encodeEvent(e: AuthEvent): ArrayBuffer {
 }
 
 export function decode(buf: ArrayBuffer): Decoded {
+  const { type, match } = peek(buf);
   const d = new DataView(buf);
-  if (d.getUint8(0) !== PROTOCOL_VERSION) throw new Error(`protocol: version ${d.getUint8(0)} != ${PROTOCOL_VERSION}`);
-  const type = d.getUint8(1);
-  if (type === MSG_STATE) {
-    const n = d.getUint8(2);
+  if (type === 'hello') return { type, match, hello: { seed: d.getUint32(HEADER_BYTES, true) } };
+  if (type === 'rematch') return { type, match };
+  if (type === 'state') {
+    const n = d.getUint8(HEADER_BYTES);
     const states: RemoteState[] = [];
     let o = STATE_HEADER_BYTES;
     for (let i = 0; i < n; i++) {
-      const s: RemoteState = {
+      states.push({
         tick: d.getUint32(o, true),
         round: d.getUint16(o + 4, true),
         x: d.getFloat32(o + 6, true),
@@ -126,15 +158,12 @@ export function decode(buf: ArrayBuffer): Decoded {
         stepPoints: d.getUint8(o + 23),
         countTicks: d.getInt32(o + 24, true),
         freezeTicks: d.getUint16(o + 28, true),
-      };
-      states.push(s);
+      });
       o += STATE_ENTRY_BYTES;
     }
-    return { type: 'state', states };
+    return { type, match, states };
   }
-  if (type === MSG_HELLO) return { type: 'hello', hello: { seed: d.getUint32(2, true) } };
-  if (type !== MSG_EVENT) throw new Error(`protocol: unknown message ${type}`);
-  let o = 2;
+  let o = HEADER_BYTES;
   const u8 = () => { const v = d.getUint8(o); o += 1; return v; };
   const i8 = () => { const v = d.getInt8(o); o += 1; return v; };
   const u16 = () => { const v = d.getUint16(o, true); o += 2; return v; };
@@ -158,7 +187,7 @@ export function decode(buf: ArrayBuffer): Decoded {
   b.homing = (flags & 1) !== 0; b.evaded = (flags & 2) !== 0;
   b.evade.front = (flags & 4) !== 0; b.evade.back = (flags & 8) !== 0; b.evade.left = (flags & 16) !== 0; b.evade.right = (flags & 32) !== 0;
   b.rally = u16(); b.bounces = u8();
-  return { type: 'event', event: { seq, tick, round, kind, side: s, value, hp, ballAuth, ball: b } };
+  return { type: 'event', match, event: { seq, tick, round, kind, side: s, value, hp, ballAuth, ball: b } };
 }
 
 /** 受け手申告の値域チェック（不正対策はしないが、壊れた値で sim を壊さない。netcode 規則） */

@@ -21,7 +21,7 @@
 ### コードの現状
 - `src/sim/`: 固定60Hz。誘導曲線の飛翔（ADR 0002）、投擲・フリ・キャッチ（ジャスト）・跳ね返し・ステップ・8秒カウント・爆発・自動取得・ラウンド。
 - `src/bot/simpleBot.ts`、`src/input/keyboardMouse.ts`、`src/render/{cameraRig,protoView}.ts`、`src/proto/`（試作）。
-- テスト 137 件緑（`npm test`。うち `test:net` 22 件）。`npm run test:e2e:net` 緑。感度チェック `npm run test:mutation` は 15 変異すべて赤。`npm run validate:data` OK。
+- テスト 140 件緑（`npm test`。うち `test:net` 25 件）。`npm run test:e2e:net` 緑。感度チェック `npm run test:mutation` は 15 変異すべて赤。`npm run validate:data` OK。
 - hooks: main への push 拒否、既存 `data/balance.json` の変更は ask（`.claude/hooks/guard.mjs`）。
 - harness-forge スキル導入済み（`.claude/skills/harness-forge/`）。
 - ブランチ: `claude/zealous-fermat-dnuy3b`（リモートのデフォルトブランチもこれ）。
@@ -37,7 +37,7 @@
 
 ## 作業中
 なし。待ち: (1) プランナーの実回線での対戦テスト（TURN は後で設定予定）、(2) Q-30・提案0003 の確認事項への回答。
-次の候補: M2 の仕上げ（相手の 100ms 補間表示、再戦、切断処理、投げ手側の結果待ちの見せ方）→ M3（見た目）。
+次の候補: M2 の仕上げの残り（投げ手側の結果待ちの見せ方、TURN 設定後の別回線テスト）→ M3（見た目）。
 
 ## ログ
 
@@ -143,4 +143,11 @@
 - 確認できたこと（クラウド環境から）: ページ配信 200、`/ice` は STUN のみ（TURN 未設定時の想定どおり）、部屋コード検証 400・非 WebSocket 426。
 - 直したこと: Worker 配信のページに doctype と文字コードが無く日本語が化けていた → `proto:pages` で骨組みを付ける。HUD の色（役割1）。
 - 確認できなかったこと: 部屋の WebSocket（クラウド環境のプロキシが WebSocket を通さない）。ローカルの wrangler dev では e2e 済み。
+
+## 2026-09-30 セッション2（M2 の仕上げ）
+- やったこと:
+  - 相手の 100ms 補間表示（`src/net/remoteTrack.ts`、遅延は `data/net.json` の `remoteInterpDelayF`）。相手が持つ球も補間位置に合わせる。
+  - 再戦: プロトコル v2（全メッセージに試合番号。前の試合の遅れて届いた分を捨てる）、`OnlineSession`（開始の合意・再戦の合意）。試合後に両者が R。
+  - 無応答の表示（3秒）。テスト: 160ms・ロス 5% で2試合続けて両者一致。
+- プランナーに確かめてほしいこと: 相手の動きが滑らかになったか（代わりに相手の見た目は約100ms＋片道遅延ぶん過去）、R で再戦できるか。
 

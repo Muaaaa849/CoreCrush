@@ -1,27 +1,12 @@
-// オンライン試合の開始: 役割 0 がシードを決めて hello を送り、両者が同じ条件で NetPeer を作る
+// オンライン対戦のセッション（1本の接続で何試合でも）。
+// - 試合開始: 役割 0 がシードを決めて hello(試合番号, シード) を送り、両者が同じ条件で NetPeer を作る
+// - 再戦: 両者が rematch(次の試合番号) を送ったら、役割 0 が次の hello を送る
+// - 受信は全てここで受け、今の試合番号のものだけを NetPeer に渡す（前の試合の遅れて届いた分を捨てる）
 import type { Balance, Stats } from '../sim/balance';
 import type { Side } from '../sim/types';
 import { NetPeer } from './peer';
-import { decode, encodeHello } from './protocol';
-import type { Channel, Transport } from './transport';
-
-/** 先に読んでしまったメッセージを NetPeer に渡し直すための包み */
-class Replay implements Transport {
-  private held: ArrayBuffer[];
-  constructor(private inner: Transport, held: ArrayBuffer[]) {
-    this.held = held;
-  }
-  send(channel: Channel, data: ArrayBuffer): void {
-    this.inner.send(channel, data);
-  }
-  poll(channel: Channel): ArrayBuffer[] {
-    const got = this.inner.poll(channel);
-    if (channel !== 'event' || this.held.length === 0) return got;
-    const out = this.held.concat(got);
-    this.held = [];
-    return out;
-  }
-}
+import { decode, encodeHello, encodeRematch, peek } from './protocol';
+import { Inbox, type Channel, type Transport } from './transport';
 
 export interface OnlineMatchOptions {
   balance: Balance;
@@ -31,26 +16,75 @@ export interface OnlineMatchOptions {
   randomSeed?: () => number;
 }
 
-/** 役割 0 は即座に、役割 1 は hello を受け取ったら NetPeer を返す。poll を毎フレーム呼ぶ */
-export function createMatchStarter(transport: Transport, opts: OnlineMatchOptions): { poll(): NetPeer | null } {
-  if (opts.role === 0) {
-    const seed = opts.randomSeed ? opts.randomSeed() : crypto.getRandomValues(new Uint32Array(1))[0]!;
-    transport.send('event', encodeHello({ seed }));
-    const peer = new NetPeer(opts.balance, { seed, stats: opts.stats, local: 0 }, transport);
-    return { poll: () => peer };
+const CHANNELS: readonly Channel[] = ['event', 'state'];
+
+export class OnlineSession {
+  peer: NetPeer | null = null;
+  /** 今の試合番号（-1 は開始前） */
+  match = -1;
+  /** 自分・相手が希望している次の試合番号（-1 は希望なし） */
+  localWants = -1;
+  remoteWants = -1;
+  private inbox = new Inbox();
+  private peerTransport: Transport;
+
+  constructor(private raw: Transport, private opts: OnlineMatchOptions) {
+    this.peerTransport = { send: (c, d) => raw.send(c, d), poll: (c) => this.inbox.poll(c) };
+    if (opts.role === 0) this.hostStart(0);
   }
-  let peer: NetPeer | null = null;
-  return {
-    poll() {
-      if (peer) return peer;
-      transport.poll('state'); // 開始前の状態は捨てる
-      const got = transport.poll('event');
-      const i = got.findIndex((b) => decode(b).type === 'hello');
-      if (i < 0) return null;
-      const m = decode(got[i]!);
-      if (m.type !== 'hello') return null;
-      peer = new NetPeer(opts.balance, { seed: m.hello.seed, stats: opts.stats, local: 1 }, new Replay(transport, got.slice(i + 1)));
-      return peer;
-    },
-  };
+
+  get role(): Side {
+    return this.opts.role;
+  }
+
+  private hostStart(match: number): void {
+    const seed = this.opts.randomSeed ? this.opts.randomSeed() : crypto.getRandomValues(new Uint32Array(1))[0]!;
+    this.raw.send('event', encodeHello(match, { seed }));
+    this.begin(match, seed);
+  }
+
+  private begin(match: number, seed: number): void {
+    this.match = match;
+    this.localWants = this.remoteWants = -1;
+    this.inbox = new Inbox();
+    this.peer = new NetPeer(this.opts.balance, { seed, stats: this.opts.stats, local: this.opts.role, match }, this.peerTransport);
+  }
+
+  /** 毎 tick、peer.step の前に呼ぶ。新しい試合が始まったら true */
+  pump(): boolean {
+    let started = false;
+    for (const ch of CHANNELS) {
+      for (const buf of this.raw.poll(ch)) {
+        const h = peek(buf);
+        if (h.type === 'hello') {
+          if (this.opts.role === 1 && h.match !== this.match) {
+            const m = decode(buf);
+            if (m.type === 'hello') {
+              this.begin(h.match, m.hello.seed);
+              started = true;
+            }
+          }
+        } else if (h.type === 'rematch') {
+          this.remoteWants = h.match;
+        } else if (h.match === this.match) {
+          this.inbox.push(ch, buf);
+        }
+      }
+    }
+    const next = (this.match + 1) & 0xff;
+    if (this.opts.role === 0 && this.localWants === next && this.remoteWants === next) {
+      this.hostStart(next);
+      started = true;
+    }
+    return started;
+  }
+
+  /** 試合が終わったあと、再戦を希望する */
+  requestRematch(): void {
+    if (this.match < 0) return;
+    const next = (this.match + 1) & 0xff;
+    if (this.localWants === next) return;
+    this.localWants = next;
+    this.raw.send('event', encodeRematch(next));
+  }
 }
