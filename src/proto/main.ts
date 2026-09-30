@@ -314,6 +314,8 @@ async function main(): Promise<void> {
       $('onlineStatus').textContent = `部屋 ${room}: 接続しました。クリックで開始`;
       botSel.disabled = true;
       $('foeName').textContent = 'RIVAL';
+      // 役割 1 はマゼンタ側。HUD の自分／相手の色を入れ替える
+      if (role === 1) document.documentElement.classList.add('swapSides');
       $('restart').hidden = true;
     } catch (e) {
       $('onlineStatus').textContent = `接続できませんでした: ${e instanceof Error ? e.message : String(e)}`;

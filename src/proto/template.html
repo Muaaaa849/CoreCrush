@@ -31,6 +31,7 @@ body { background: var(--bg); color: var(--fg); font: 14px/1.5 var(--font-body);
 .count { font: 700 30px/1 var(--font-display); font-variant-numeric: tabular-nums; min-width: 6ch; text-align: center; text-shadow: 0 0 12px currentColor; }
 .face { font: 600 13px/1 var(--font-mono); letter-spacing: .1em; }
 .wins { font: 700 18px/1 var(--font-display); letter-spacing: .08em; }
+:root.swapSides { --me: #ff2bd6; --foe: #35f2ff; }
 .wins .me { color: var(--me); } .wins .foe { color: var(--foe); }
 .card { position: absolute; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); width: min(320px, 42vw); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; display: grid; gap: 6px; }
 .card.me { left: 16px; } .card.foe { right: 16px; }
