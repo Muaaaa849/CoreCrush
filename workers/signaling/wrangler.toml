@@ -1,0 +1,17 @@
+# CORE-CRUSH シグナリング（部屋コード1つ＝Durable Object 1つ。WebSocket で SDP/ICE を中継するだけ。GDD 11.1）
+name = "core-crush-signaling"
+main = "src/index.ts"
+compatibility_date = "2026-09-01"
+
+[[durable_objects.bindings]]
+name = "ROOMS"
+class_name = "Room"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Room"]
+
+[vars]
+# 接続を許すページのオリジン（カンマ区切り。* は全て）。本番は Pages のドメインに絞る
+ALLOWED_ORIGINS = "*"
+# TURN_KEY_ID と TURN_KEY_API_TOKEN は `wrangler secret put` で設定する（リポジトリに置かない）

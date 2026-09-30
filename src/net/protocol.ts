@@ -9,6 +9,7 @@ export const PROTOCOL_VERSION = 1;
 export const STATE_REDUNDANCY = 4;
 const MSG_STATE = 1;
 const MSG_EVENT = 2;
+const MSG_HELLO = 3;
 
 const ACTIONS: readonly Action[] = [
   'idle', 'windup', 'fakeWindup', 'throwRecovery', 'fakeRecovery', 'catch', 'catchRecovery',
@@ -33,7 +34,21 @@ function at<T>(list: readonly T[], i: number): T {
 }
 const side = (v: number): Side | -1 => (v === 0 ? 0 : v === 1 ? 1 : -1);
 
-export type Decoded = { type: 'state'; states: RemoteState[] } | { type: 'event'; event: AuthEvent };
+/** 試合開始の合意（役割 0 が送る）。sim の外で決めたシードを両者で使う */
+export interface Hello {
+  seed: number;
+}
+
+export type Decoded = { type: 'state'; states: RemoteState[] } | { type: 'event'; event: AuthEvent } | { type: 'hello'; hello: Hello };
+
+export function encodeHello(h: Hello): ArrayBuffer {
+  const buf = new ArrayBuffer(6);
+  const d = new DataView(buf);
+  d.setUint8(0, PROTOCOL_VERSION);
+  d.setUint8(1, MSG_HELLO);
+  d.setUint32(2, h.seed >>> 0, true);
+  return buf;
+}
 
 /** states は新しい順に最大 STATE_REDUNDANCY 件 */
 export function encodeState(states: readonly RemoteState[]): ArrayBuffer {
@@ -117,6 +132,7 @@ export function decode(buf: ArrayBuffer): Decoded {
     }
     return { type: 'state', states };
   }
+  if (type === MSG_HELLO) return { type: 'hello', hello: { seed: d.getUint32(2, true) } };
   if (type !== MSG_EVENT) throw new Error(`protocol: unknown message ${type}`);
   let o = 2;
   const u8 = () => { const v = d.getUint8(o); o += 1; return v; };
