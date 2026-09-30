@@ -1,0 +1,132 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CORE-CRUSH balance",
+  "type": "object",
+  "additionalProperties": false,
+  "definitions": {
+    "pos": { "type": "number", "exclusiveMinimum": 0 },
+    "nonneg": { "type": "number", "minimum": 0 },
+    "frames": { "type": "integer", "minimum": 0 },
+    "posFrames": { "type": "integer", "minimum": 1 },
+    "ratio": { "type": "number", "minimum": 0, "maximum": 1 },
+    "stepDir": { "enum": ["front", "back", "left", "right"] },
+    "throwType": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["speedMps", "lateralM", "apexM", "homing", "evade"],
+      "properties": {
+        "speedMps": { "$ref": "#/definitions/pos" },
+        "lateralM": { "type": "number" },
+        "apexM": { "$ref": "#/definitions/nonneg" },
+        "homing": { "type": "boolean" },
+        "evade": { "type": "array", "items": { "$ref": "#/definitions/stepDir" }, "uniqueItems": true }
+      }
+    },
+    "byDefense": { "type": "array", "minItems": 10, "maxItems": 10, "items": { "$ref": "#/definitions/posFrames" } }
+  },
+  "required": ["version", "tickHz", "court", "player", "stats", "count", "throw", "fake", "catch", "parry", "step", "hit", "meter", "ball", "round", "invariants"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "version": { "const": 1 },
+    "tickHz": { "const": 60 },
+    "court": {
+      "type": "object", "additionalProperties": false,
+      "required": ["widthM", "depthM", "ceilingM", "spawnFromCenterM", "fenceClearanceM", "trajectoryMarginM"],
+      "properties": {
+        "widthM": { "$ref": "#/definitions/pos" }, "depthM": { "$ref": "#/definitions/pos" }, "ceilingM": { "$ref": "#/definitions/pos" },
+        "spawnFromCenterM": { "$ref": "#/definitions/pos" }, "fenceClearanceM": { "$ref": "#/definitions/nonneg" }, "trajectoryMarginM": { "$ref": "#/definitions/nonneg" }
+      }
+    },
+    "player": {
+      "type": "object", "additionalProperties": false,
+      "required": ["baseMoveMps", "bodyRadiusM", "bodyHeightM", "chestHeightM", "handHeightM", "handForwardM", "pickupRadiusM", "pickupMaxHeightM", "moveMulDuringWindup"],
+      "properties": {
+        "baseMoveMps": { "$ref": "#/definitions/pos" }, "bodyRadiusM": { "$ref": "#/definitions/pos" }, "bodyHeightM": { "$ref": "#/definitions/pos" }, "chestHeightM": { "$ref": "#/definitions/pos" },
+        "handHeightM": { "$ref": "#/definitions/pos" }, "handForwardM": { "$ref": "#/definitions/nonneg" }, "pickupRadiusM": { "$ref": "#/definitions/pos" },
+        "pickupMaxHeightM": { "$ref": "#/definitions/pos" }, "moveMulDuringWindup": { "$ref": "#/definitions/ratio" }
+      }
+    },
+    "stats": {
+      "type": "object", "additionalProperties": false,
+      "required": ["min", "max", "median", "sumBase", "sumMax", "attackSpeedAddPerPoint", "hpBase", "hpPerDefensePoint", "agilityMoveAddPerPoint", "stepRecoverBaseSec", "stepRecoverAddPerAgilityPoint"],
+      "properties": {
+        "min": { "const": 1 }, "max": { "const": 10 }, "median": { "type": "integer" }, "sumBase": { "type": "integer" }, "sumMax": { "type": "integer" },
+        "attackSpeedAddPerPoint": { "$ref": "#/definitions/nonneg" }, "hpBase": { "$ref": "#/definitions/pos" }, "hpPerDefensePoint": { "$ref": "#/definitions/nonneg" },
+        "agilityMoveAddPerPoint": { "$ref": "#/definitions/nonneg" }, "stepRecoverBaseSec": { "$ref": "#/definitions/pos" }, "stepRecoverAddPerAgilityPoint": { "$ref": "#/definitions/nonneg" }
+      }
+    },
+    "count": {
+      "type": "object", "additionalProperties": false,
+      "required": ["explodeSec", "explosionDamage", "roundStartFreezeSec", "postExplosionFreezeSec", "speedCurveAdd", "powerCurveAdd", "faceSec"],
+      "properties": {
+        "explodeSec": { "$ref": "#/definitions/pos" }, "explosionDamage": { "$ref": "#/definitions/nonneg" },
+        "roundStartFreezeSec": { "$ref": "#/definitions/nonneg" }, "postExplosionFreezeSec": { "$ref": "#/definitions/nonneg" },
+        "speedCurveAdd": { "$ref": "#/definitions/nonneg" }, "powerCurveAdd": { "$ref": "#/definitions/nonneg" },
+        "faceSec": {
+          "type": "object", "additionalProperties": false, "required": ["nervous", "angry", "blink", "crack"],
+          "properties": { "nervous": { "type": "number" }, "angry": { "type": "number" }, "blink": { "type": "number" }, "crack": { "type": "number" } }
+        }
+      }
+    },
+    "throw": {
+      "type": "object", "additionalProperties": false,
+      "required": ["windupF", "recoveryF", "baseDamage", "directionInputThreshold", "types", "aimedMaxRangeM"],
+      "properties": {
+        "windupF": { "$ref": "#/definitions/posFrames" }, "recoveryF": { "$ref": "#/definitions/frames" }, "baseDamage": { "$ref": "#/definitions/pos" },
+        "directionInputThreshold": { "$ref": "#/definitions/ratio" }, "aimedMaxRangeM": { "$ref": "#/definitions/pos" },
+        "types": {
+          "type": "object", "additionalProperties": false, "required": ["straight", "curveLeft", "curveRight", "lob", "aimed"],
+          "properties": {
+            "straight": { "$ref": "#/definitions/throwType" }, "curveLeft": { "$ref": "#/definitions/throwType" }, "curveRight": { "$ref": "#/definitions/throwType" },
+            "lob": { "$ref": "#/definitions/throwType" }, "aimed": { "$ref": "#/definitions/throwType" }
+          }
+        }
+      }
+    },
+    "fake": { "type": "object", "additionalProperties": false, "required": ["cost"], "properties": { "cost": { "$ref": "#/definitions/nonneg" } } },
+    "catch": {
+      "type": "object", "additionalProperties": false,
+      "required": ["startupF", "recoveryF", "whiffStaggerF", "windowByDefenseF", "justByDefenseF", "gain", "justBonusGain"],
+      "properties": {
+        "startupF": { "$ref": "#/definitions/frames" }, "recoveryF": { "$ref": "#/definitions/frames" }, "whiffStaggerF": { "$ref": "#/definitions/frames" },
+        "windowByDefenseF": { "$ref": "#/definitions/byDefense" }, "justByDefenseF": { "$ref": "#/definitions/byDefense" },
+        "gain": { "$ref": "#/definitions/nonneg" }, "justBonusGain": { "$ref": "#/definitions/nonneg" }
+      }
+    },
+    "parry": {
+      "type": "object", "additionalProperties": false,
+      "required": ["startupF", "windowF", "recoveryF", "whiffStaggerF", "gain", "rallySpeedMul"],
+      "properties": {
+        "startupF": { "$ref": "#/definitions/frames" }, "windowF": { "$ref": "#/definitions/posFrames" }, "recoveryF": { "$ref": "#/definitions/frames" },
+        "whiffStaggerF": { "$ref": "#/definitions/frames" }, "gain": { "$ref": "#/definitions/nonneg" }, "rallySpeedMul": { "type": "number", "minimum": 1 }
+      }
+    },
+    "step": {
+      "type": "object", "additionalProperties": false, "required": ["distanceM", "durationF", "maxPoints", "directionBoundaryDeg"],
+      "properties": {
+        "distanceM": { "$ref": "#/definitions/pos" }, "durationF": { "$ref": "#/definitions/posFrames" }, "maxPoints": { "type": "integer", "minimum": 0 },
+        "directionBoundaryDeg": { "type": "number", "exclusiveMinimum": 0, "exclusiveMaximum": 90 }
+      }
+    },
+    "hit": { "type": "object", "additionalProperties": false, "required": ["reactionF"], "properties": { "reactionF": { "$ref": "#/definitions/frames" } } },
+    "meter": { "type": "object", "additionalProperties": false, "required": ["max"], "properties": { "max": { "$ref": "#/definitions/pos" } } },
+    "ball": {
+      "type": "object", "additionalProperties": false,
+      "required": ["radiusM", "gravityMps2", "floorRestitution", "maxBounceMps", "wallRestitution", "floorFrictionPerSec", "restSpeedMps"],
+      "properties": {
+        "radiusM": { "$ref": "#/definitions/pos" }, "gravityMps2": { "$ref": "#/definitions/pos" }, "floorRestitution": { "$ref": "#/definitions/ratio" }, "maxBounceMps": { "$ref": "#/definitions/pos" },
+        "wallRestitution": { "$ref": "#/definitions/ratio" }, "floorFrictionPerSec": { "$ref": "#/definitions/nonneg" }, "restSpeedMps": { "$ref": "#/definitions/nonneg" }
+      }
+    },
+    "round": {
+      "type": "object", "additionalProperties": false, "required": ["roundsToWin", "interRoundSec"],
+      "properties": { "roundsToWin": { "type": "integer", "minimum": 1 }, "interRoundSec": { "$ref": "#/definitions/nonneg" } }
+    },
+    "invariants": {
+      "type": "object", "additionalProperties": false, "required": ["fakeReactionBudgetF", "fakeNetBudgetF", "fakeGuaranteeDistanceM"],
+      "properties": {
+        "fakeReactionBudgetF": { "$ref": "#/definitions/frames" }, "fakeNetBudgetF": { "$ref": "#/definitions/frames" }, "fakeGuaranteeDistanceM": { "$ref": "#/definitions/pos" }
+      }
+    }
+  }
+}

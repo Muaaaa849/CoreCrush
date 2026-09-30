@@ -10,7 +10,10 @@
     "test": "vitest run",
     "preview": "vite preview",
     "m0:headless": "vite build && node bench/run-m0.mjs",
-    "m0:lab": "vite build --config src/m0/lab/vite.lab.config.ts && node src/m0/lab/assemble.mjs"
+    "m0:lab": "vite build --config src/m0/lab/vite.lab.config.ts && node src/m0/lab/assemble.mjs",
+    "validate:data": "node scripts/validate-data.mjs",
+    "test:sim": "vitest run tests/sim",
+    "test:mutation": "node scripts/mutation-check.mjs"
   },
   "dependencies": {
     "three": "0.186.1"
@@ -19,6 +22,7 @@
     "@playwright/test": "1.63.0",
     "@types/node": "26.6.3",
     "@types/three": "0.186.0",
+    "ajv": "8.20.0",
     "typescript": "7.0.2",
     "vite": "8.3.1",
     "vitest": "5.0.2"

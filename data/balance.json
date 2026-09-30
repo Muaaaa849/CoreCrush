@@ -1,0 +1,181 @@
+{
+  "$schema": "../schemas/balance.schema.json",
+  "version": 1,
+  "tickHz": 60,
+  "court": {
+    "widthM": 10,
+    "depthM": 12,
+    "ceilingM": 8,
+    "spawnFromCenterM": 7,
+    "fenceClearanceM": 0.3,
+    "trajectoryMarginM": 0.8
+  },
+  "player": {
+    "baseMoveMps": 5.0,
+    "bodyRadiusM": 0.4,
+    "bodyHeightM": 1.8,
+    "chestHeightM": 1.3,
+    "handHeightM": 1.6,
+    "handForwardM": 0.5,
+    "pickupRadiusM": 0.9,
+    "pickupMaxHeightM": 2.0,
+    "moveMulDuringWindup": 0.3
+  },
+  "stats": {
+    "min": 1,
+    "max": 10,
+    "median": 5,
+    "sumBase": 15,
+    "sumMax": 16,
+    "attackSpeedAddPerPoint": 0.04,
+    "hpBase": 100,
+    "hpPerDefensePoint": 8,
+    "agilityMoveAddPerPoint": 0.04,
+    "stepRecoverBaseSec": 15,
+    "stepRecoverAddPerAgilityPoint": 0.06
+  },
+  "count": {
+    "explodeSec": 8,
+    "explosionDamage": 30,
+    "roundStartFreezeSec": 3,
+    "postExplosionFreezeSec": 1.5,
+    "speedCurveAdd": 0.25,
+    "powerCurveAdd": 0.6,
+    "faceSec": {
+      "nervous": 3,
+      "angry": 5,
+      "blink": 7,
+      "crack": 7.5
+    }
+  },
+  "throw": {
+    "windupF": 8,
+    "recoveryF": 12,
+    "baseDamage": 20,
+    "directionInputThreshold": 0.5,
+    "types": {
+      "straight": {
+        "speedMps": 32,
+        "lateralM": 0,
+        "apexM": 0,
+        "homing": true,
+        "evade": [
+          "front",
+          "back",
+          "left",
+          "right"
+        ]
+      },
+      "curveLeft": {
+        "speedMps": 23,
+        "lateralM": 2.5,
+        "apexM": 0.5,
+        "homing": true,
+        "evade": [
+          "front",
+          "back"
+        ]
+      },
+      "curveRight": {
+        "speedMps": 23,
+        "lateralM": -2.5,
+        "apexM": 0.5,
+        "homing": true,
+        "evade": [
+          "front",
+          "back"
+        ]
+      },
+      "lob": {
+        "speedMps": 17,
+        "lateralM": 0,
+        "apexM": 6,
+        "homing": true,
+        "evade": [
+          "left",
+          "right"
+        ]
+      },
+      "aimed": {
+        "speedMps": 32,
+        "lateralM": 0,
+        "apexM": 0,
+        "homing": false,
+        "evade": []
+      }
+    },
+    "aimedMaxRangeM": 30
+  },
+  "fake": {
+    "cost": 0.25
+  },
+  "catch": {
+    "startupF": 2,
+    "recoveryF": 22,
+    "whiffStaggerF": 48,
+    "windowByDefenseF": [
+      4,
+      5,
+      5,
+      6,
+      6,
+      6,
+      7,
+      7,
+      8,
+      8
+    ],
+    "justByDefenseF": [
+      1,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      3,
+      3
+    ],
+    "gain": 1.0,
+    "justBonusGain": 0.25
+  },
+  "parry": {
+    "startupF": 1,
+    "windowF": 9,
+    "recoveryF": 10,
+    "whiffStaggerF": 24,
+    "gain": 0.25,
+    "rallySpeedMul": 1.06
+  },
+  "step": {
+    "distanceM": 5,
+    "durationF": 12,
+    "maxPoints": 2,
+    "directionBoundaryDeg": 45
+  },
+  "hit": {
+    "reactionF": 20
+  },
+  "meter": {
+    "max": 5
+  },
+  "ball": {
+    "radiusM": 0.2,
+    "gravityMps2": 9.8,
+    "floorRestitution": 0.25,
+    "maxBounceMps": 3.0,
+    "wallRestitution": 0.2,
+    "floorFrictionPerSec": 4.0,
+    "restSpeedMps": 0.5
+  },
+  "round": {
+    "roundsToWin": 2,
+    "interRoundSec": 2
+  },
+  "invariants": {
+    "fakeReactionBudgetF": 13,
+    "fakeNetBudgetF": 3,
+    "fakeGuaranteeDistanceM": 13
+  }
+}
