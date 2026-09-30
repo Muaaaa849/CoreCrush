@@ -108,9 +108,11 @@ function throwTypeFromInput(b: Balance, input: PlayerInput): ThrowTypeName {
   // Q-09 提案: 後ろ入力＝上カーブ ＞ 左右の片方＝左右カーブ ＞ それ以外＝ストレート
   const th = b.throw.directionInputThreshold;
   if (input.secondaryHeld) return 'aimed';
-  if (input.moveForward <= -th) return 'lob';
-  if (input.moveRight <= -th) return 'curveLeft';
-  if (input.moveRight >= th) return 'curveRight';
+  const right = input.keyRight ?? input.moveRight;
+  const forward = input.keyForward ?? input.moveForward;
+  if (forward <= -th) return 'lob';
+  if (right <= -th) return 'curveLeft';
+  if (right >= th) return 'curveRight';
   return 'straight';
 }
 
@@ -318,6 +320,19 @@ function checkKo(w: World): void {
   w.phaseTicks = secToTicks(w.balance, w.balance.round.interRoundSec);
 }
 
+function copyInput(dst: PlayerInput, src: PlayerInput): void {
+  dst.moveRight = src.moveRight;
+  dst.moveForward = src.moveForward;
+  dst.primary = src.primary;
+  dst.secondary = src.secondary;
+  dst.secondaryHeld = src.secondaryHeld;
+  dst.fake = src.fake;
+  dst.step = src.step;
+  dst.aimDir = src.aimDir;
+  dst.keyRight = src.keyRight;
+  dst.keyForward = src.keyForward;
+}
+
 /** 1 tick 進める */
 export function stepWorld(w: World, inputs: readonly [PlayerInput, PlayerInput]): void {
   w.eventCount = 0;
@@ -328,7 +343,7 @@ export function stepWorld(w: World, inputs: readonly [PlayerInput, PlayerInput])
     return;
   }
   for (const p of w.players) {
-    Object.assign(p.input, inputs[p.side]);
+    copyInput(p.input, inputs[p.side]);
     advanceAction(w, p);
     handleInput(w, p, p.input);
     move(w, p, p.input);

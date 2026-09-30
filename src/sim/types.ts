@@ -16,6 +16,12 @@ export interface PlayerInput {
   step: boolean;
   /** 狙い投げの方向（ワールド）。null なら相手の胸へ */
   aimDir: Vec3 | null;
+  /**
+   * 球種を決める生のキー方向（A/D = ∓1、W/S = ±1）。移動はカメラ基準でコート座標に変換されるため別に持つ。
+   * 省略時は moveRight / moveForward を使う（ボット・テスト用）。
+   */
+  keyRight?: number;
+  keyForward?: number;
 }
 
 export const NO_INPUT: Readonly<PlayerInput> = Object.freeze({

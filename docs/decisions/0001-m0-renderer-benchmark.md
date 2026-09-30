@@ -65,6 +65,8 @@ GDD は WebGPURenderer＋TSL＋RenderPipeline を推奨し、M0 で WebGL との
 ## 決定（暫定）
 - **WebGPURenderer（TSL）を採用**。GDD の推奨どおり。
 - 初期化・初回描画で失敗したら `forceWebGL` で作り直すフォールバックを入れる（古い Chrome 対策）。
+  **実装済み（試作 `src/render/protoView.ts`）**: Chrome 141 では `init()` は通り、初回の `render()` で `swizzle` 例外が出ることを確認。
+  そのため初期化直後に試し描画（ウォームアップを兼ねる）を行い、失敗したら WebGL2 で作り直す。
 - 試合開始前にシェーダーのウォームアップ描画を行う（初回の数十 ms の引っかかり対策）。
 - ベンチは M3 で GPU タイムスタンプ計測に切り替え、実ステージでノート PC を含めて再計測する。
 - 切替が必要になった場合の第一候補は **WebGPURenderer の WebGL2 バックエンド強制**（TSL 資産を捨てない）。

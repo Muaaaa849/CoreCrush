@@ -53,6 +53,7 @@ data/           balance.json, characters/, skills/, vfx/（数値の唯一の置
 workers/signaling/  Worker + Durable Objects
 tests/          sim/, net/, e2e/    bench/  性能計測（run-m0.mjs, results/）
 src/m0/         M0 技術検証ページ（使い捨て。本番コードから import しない）。lab/ は実機計測用 Artifact
+src/proto/      M1 箱キャラ試作（Artifact で公開。`npm run proto:artifact`）  src/bot/  テスト・試作用ボット
 docs/gdd/ docs/decisions/ docs/proposals/ docs/playtest/ docs/progress.md
 ```
 
@@ -67,8 +68,9 @@ docs/gdd/ docs/decisions/ docs/proposals/ docs/playtest/ docs/progress.md
 - 乱数は sim 内のシード付き RNG のみ。試合中の `new`（オブジェクト生成）はプールで避ける。
 
 ## コマンド（予定。package.json 作成時に実体と一致させる）
-- 実在: `npm run dev` / `npm run build` / `npm run typecheck` / `npm test` / `npm run m0:headless`
-- 予定: `npm run test:sim` / `npm run test:net` / `npm run bench` / `npm run validate:data` / `npm run lint`
+- 実在: `npm run dev` / `build` / `typecheck` / `test` / `test:sim` / `test:mutation`（感度チェック） / `validate:data`
+  / `m0:headless` / `m0:lab` / `proto:artifact`
+- 予定: `npm run test:net` / `npm run bench` / `npm run lint`
 - クラウドで Playwright を使うときは `CHROMIUM_PATH=/opt/pw-browsers/chromium`（`playwright install` はしない）
 
 ## 作業の流れ
