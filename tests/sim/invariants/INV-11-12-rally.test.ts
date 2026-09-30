@@ -36,7 +36,7 @@ describe('INV-11 ラリー', () => {
       const w = makeWorld({ balance: { throw: { types: { straight: { speedMps: 800 }, aimed: { speedMps: 800 } } } } });
       giveBall(w, 0);
       let hit = false;
-      for (let t = 0; t < 60 && !hit; t++) hit = has(tick(w, { primary: t === 0, secondaryHeld: aimed }), 'hit', 1);
+      for (let t = 0; t < 240 && !hit; t++) hit = has(tick(w, { primary: t === 0, secondaryHeld: aimed }), 'hit', 1);
       expect(hit).toBe(true);
     }
   });
@@ -58,7 +58,7 @@ describe('INV-12 返した球は返した側のもの', () => {
   it('返球は無入力でストレート（左右ステップで回避可）になり、投げ手が入れ替わる', () => {
     const w = makeWorld();
     giveBall(w, 0);
-    for (let t = 0; t < 60; t++) {
+    for (let t = 0; t < 240; t++) {
       const ev = tick(w, { primary: t === 0 }, perfectParry(w, 1));
       if (has(ev, 'parry', 1)) break;
     }
@@ -82,13 +82,14 @@ describe('INV-12 返した球は返した側のもの', () => {
       giveBall(w, 0);
       let incoming = 0;
       let returned = 0;
-      for (let t = 0; t < 60 && !returned; t++) {
+      for (let t = 0; t < 240 && !returned; t++) {
         const ev = tick(w, { primary: t === 0 }, { ...move, ...perfectParry(w, 1) });
         for (const e of ev) {
           if (e.kind === 'release') incoming = e.value;
           if (e.kind === 'parry') returned = e.value;
         }
       }
+      expect(returned).toBeGreaterThan(0);
       expect(w.ball.kind).toBe(kind);
       expect(w.ball.mode).toBe('flight');
       expect(returned).toBeCloseTo(incoming * w.balance.parry.rallySpeedMul, 6);

@@ -59,11 +59,16 @@ describe('INV-05 フリ', () => {
 
 describe('INV-06 キャッチと跳ね返しの関係', () => {
   const b = makeWorld().balance;
+  // 2026-09-30 プランナー指示: キャッチ受付+2F。中央値の防御ではキャッチ < 跳ね返しを保つ。
+  // 防御の高いキャラはキャッチが跳ね返しと並ぶ・超えるのを許容（防御キャラの特権。Q-28 の拡張）
+  it('防御の中央値ではキャッチ受付 < 跳ね返し受付', () => {
+    expect(catchWindowF(b, b.stats.median)).toBeLessThan(b.parry.windowF);
+  });
   for (let d = 1; d <= 10; d++) {
-    it(`防御${d}: キャッチ受付 < 跳ね返し受付、ジャスト ≤ 受付`, () => {
-      expect(catchWindowF(b, d)).toBeLessThan(b.parry.windowF);
+    it(`防御${d}: ジャスト ≤ 受付、受付は防御とともに減らない`, () => {
       expect(justWindowF(b, d)).toBeLessThanOrEqual(catchWindowF(b, d));
       expect(justWindowF(b, d)).toBeGreaterThanOrEqual(1);
+      if (d > 1) expect(catchWindowF(b, d)).toBeGreaterThanOrEqual(catchWindowF(b, d - 1));
     });
   }
   it('ジャスト幅は防御の中央値で 2F（Q-25）', () => {
@@ -76,7 +81,7 @@ describe('INV-06 キャッチと跳ね返しの関係', () => {
   it('キャッチ成功でゲージが増え、ジャストなら上乗せ', () => {
     // 到達に合わせて押すタイミングを全探索し、普通のキャッチとジャストの両方が起きることを確認
     const gains = new Map<string, number>();
-    for (let press = 20; press < 50; press++) {
+    for (let press = 0; press < 150; press++) {
       const w = makeWorld();
       giveBall(w, 0);
       const ev = throwAndResolve(w, 0, {}, (t) => (t === press ? { secondary: true } : {}));

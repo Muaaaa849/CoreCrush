@@ -60,7 +60,6 @@ export class ProtoView {
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 0.9;
     this.scene.background = new THREE.Color(0x07080d);
-    this.scene.fog = new THREE.Fog(0x07080d, 25, 60);
     this.scene.add(new THREE.HemisphereLight(0x8899cc, 0x221122, 0.9));
     const sun = new THREE.DirectionalLight(0xffffff, 1.0);
     sun.position.set(-6, 14, 4);
@@ -68,6 +67,8 @@ export class ProtoView {
 
     const W = b.court.widthM;
     const D = b.court.depthM;
+    // 霧はコート全長（2D）より奥から効かせる（相手や奥の壁をかすませない）
+    this.scene.fog = new THREE.Fog(0x07080d, D * 2, D * 5);
     const floor = new THREE.Mesh(new THREE.PlaneGeometry(W, D * 2), new THREE.MeshStandardMaterial({ color: 0x12141c, roughness: 0.35, metalness: 0.4 }));
     floor.rotation.x = -Math.PI / 2;
     this.scene.add(floor);

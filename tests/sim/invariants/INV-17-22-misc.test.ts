@@ -1,5 +1,6 @@
 // INV-17 間合いは固定 / INV-18 主役は通常球 / INV-20 勝敗 / INV-21 追尾で防御を難しくしない / INV-22 天井・床
 import { describe, expect, it } from 'vitest';
+import { dtSec, moveMul } from '../../../src/sim/balance';
 import { advanceLoose, flightPoint } from '../../../src/sim/ball';
 import { set, vec3 } from '../../../src/sim/math';
 import { createRng, nextFloat } from '../../../src/sim/rng';
@@ -52,13 +53,17 @@ describe('INV-21 追尾・吸着でキャッチや跳ね返しを難しくしな
     strafe: () => ({ moveRight: 1 }),
     back: () => ({ moveForward: -1 }),
   };
+  // 受け手は投擲直後に一定距離（MOVE_M）だけ動く。移動速度が変わっても検証の厳しさが変わらないよう、時間ではなく距離で決める
+  const MOVE_M = 5 / 6;
   for (const type of [{}, { moveRight: -1 }, { moveForward: -1 }] as Partial<PlayerInput>[]) {
     it(`${JSON.stringify(type)}: 動いていても到達 tick は静止時と ±1 以内、同じ押しタイミングで同じ結果`, () => {
+      const b0 = makeWorld().balance;
+      const moveTicks = Math.round(MOVE_M / (b0.player.baseMoveMps * moveMul(b0, 5) * dtSec(b0)));
       const arrival: Record<string, number> = {};
       for (const [name, mv] of Object.entries(moves)) {
         const w = makeWorld();
         giveBall(w, 0);
-        const ev = throwAndResolve(w, 0, type, (t) => (t < 10 ? mv(t) : {}));
+        const ev = throwAndResolve(w, 0, type, (t) => (t < moveTicks ? mv(t) : {}));
         arrival[name] = ev.find((e) => e.kind === 'hit')!.tick;
       }
       expect(Math.abs(arrival.strafe! - arrival.still!)).toBeLessThanOrEqual(1);
@@ -70,7 +75,7 @@ describe('INV-21 追尾・吸着でキャッチや跳ね返しを難しくしな
         giveBall(w, 0);
         const start = w.tick;
         const press = arrival[name]! - start - w.balance.catch.startupF - 2;
-        const ev = throwAndResolve(w, 0, type, (t) => (t === press ? { secondary: true } : t < 10 ? mv(t) : {}));
+        const ev = throwAndResolve(w, 0, type, (t) => (t === press ? { secondary: true } : t < moveTicks ? mv(t) : {}));
         expect(has(ev, 'catch', 1) || has(ev, 'justCatch', 1), name).toBe(true);
       }
       expect(pressOffset).toBeGreaterThan(0);
