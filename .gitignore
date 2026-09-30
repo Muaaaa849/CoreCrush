@@ -8,3 +8,4 @@ dist-lab/
 .dev.vars
 workers/signaling/public/
 dist-pages/
+art/source/

@@ -63,6 +63,15 @@ if (!validateQ(quality)) {
 const render = load('data/render.json');
 const validateR = ajv.compile(load('schemas/render.schema.json'));
 if (!validateR(render)) for (const e of validateR.errors ?? []) fail(`render.json${e.instancePath} ${e.message}`);
+else {
+  // 小物・遠景が参照するアセットが一覧にあること
+  const models = new Set(load('art/models.json').models.map((m) => m.id));
+  for (const g of render.stage.props) if (!models.has(g.model)) fail(`render.json stage.props: モデル ${g.model} が art/models.json にない`);
+  if (!models.has(render.stage.fire.model)) fail(`render.json stage.fire.model ${render.stage.fire.model} が art/models.json にない`);
+  const textures = new Set(load('art/assets.json').textures.map((t) => t.id));
+  const bd = render.stage.backdrop;
+  for (const id of [bd.sky.texture, ...bd.layers.map((l) => l.texture)]) if (!textures.has(id)) fail(`render.json 遠景のテクスチャ ${id} が art/assets.json にない`);
+}
 
 // コアの顔（GDD 13）
 const face = load('data/vfx/coreFace.json');

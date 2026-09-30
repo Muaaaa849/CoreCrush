@@ -17,3 +17,4 @@
 | 素材 | 出典 | ライセンス |
 |---|---|---|
 | asphalt_02（色・法線・粗さ 1K） | Poly Haven https://polyhaven.com/a/asphalt_02 | CC0 1.0 |
+| 小物の 3D モデル 10 点（security_light, Barrel_01, barrel_03, barrel_stove, exterior_aircon_unit, modular_industrial_pipes_01, old_tyre, power_box_01, security_camera_01, propane_tank） | Poly Haven https://polyhaven.com/models （一覧は `art/models.json`、`npm run assets` で meshopt＋KTX2 512px の glb に） | CC0 1.0 |

@@ -12,6 +12,7 @@ import type { QualityPreset } from './quality';
 import { Floor, type FloorLook } from './floor';
 import { Backdrop, type BackdropLook } from './backdrop';
 import { loadTexture } from './assets';
+import { Props, type FireLook, type PropGroup } from './props';
 
 type Vec3 = [number, number, number];
 export interface StageLook {
@@ -23,6 +24,8 @@ export interface StageLook {
   env: { intensity: number; panelHdr: number };
   floor: FloorLook;
   backdrop: BackdropLook;
+  props: PropGroup[];
+  fire: FireLook;
   lines: { widthM: number; hdr: number };
   cage: { color: string; heightM: number; cellM: number; wireFrac: number; opacity: number; marginM: number; postColor: string; postSpacingM: number };
   opponentRim: { hdr: number; power: number };
@@ -46,6 +49,7 @@ export class Stage {
   private readonly crowdMax: number;
   private readonly floor: Floor;
   private readonly backdrop: Backdrop;
+  private readonly props: Props;
   private env: THREE.RenderTarget | null = null;
 
   constructor(
@@ -97,6 +101,10 @@ export class Stage {
     // --- 遠景（プランナー生成の画像。読み込めたら表示） ---
     this.backdrop = new Backdrop(L.backdrop);
     scene.add(this.backdrop.group);
+
+    // --- コート外周の小物（CC0 モデル。読み込めたら表示） ---
+    this.props = new Props(L.props, L.fire);
+    scene.add(this.props.group);
 
     // --- 金網（コート外周。ひし形の網をシェーダーで。遠くは網目の平均の濃さに溶かす） ---
     const C = L.cage;
@@ -156,6 +164,12 @@ export class Stage {
     ]);
     this.floor.setTextures(diff, nor, rough);
     await this.backdrop.load(renderer);
+    await this.props.load(renderer);
+  }
+
+  /** 毎フレーム（火の揺らぎなど） */
+  update(timeSec: number): void {
+    this.props.update(timeSec);
   }
 
   /** 環境マップ（床に映るネオン）。レンダラーの初期化後に 1 回だけ */
@@ -201,6 +215,7 @@ export class Stage {
     }
     this.crowd.count = Math.round(this.crowdMax * q.decorMul);
     this.floor.setReflection(q.floorReflection);
+    this.props.applyDecor(q.decorMul);
   }
 }
 

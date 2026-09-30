@@ -55,7 +55,9 @@
         "cage",
         "opponentRim",
         "crowd",
-        "backdrop"
+        "backdrop",
+        "props",
+        "fire"
       ],
       "properties": {
         "background": {
@@ -556,6 +558,90 @@
             }
           },
           "description": "遠景（生成画像）。霧の外なので自前で暗く・彩度を落とす"
+        },
+        "props": {
+          "description": "コート外周の小物（CC0 モデル、art/models.json）。[x, y, z, 向き(度)|null=コート中心へ, 倍率]",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "model",
+              "mirrorX",
+              "mirrorZ",
+              "items"
+            ],
+            "properties": {
+              "model": {
+                "type": "string"
+              },
+              "mirrorX": {
+                "type": "boolean"
+              },
+              "mirrorZ": {
+                "type": "boolean"
+              },
+              "items": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "array",
+                  "minItems": 3,
+                  "maxItems": 5,
+                  "items": {
+                    "type": [
+                      "number",
+                      "null"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "fire": {
+          "description": "燃えるドラム缶（点光源＋炎の芯）",
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "model",
+            "color",
+            "lightIntensity",
+            "lightRangeM",
+            "glowHdr",
+            "heightM",
+            "flicker"
+          ],
+          "properties": {
+            "model": {
+              "type": "string"
+            },
+            "color": {
+              "$ref": "#/definitions/hex"
+            },
+            "lightIntensity": {
+              "type": "number",
+              "minimum": 0
+            },
+            "lightRangeM": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "glowHdr": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 2.5,
+              "description": "コア（3.0）より暗く"
+            },
+            "heightM": {
+              "type": "number"
+            },
+            "flicker": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          }
         }
       },
       "description": "ステージの見た目（GDD 1, 12.2）"

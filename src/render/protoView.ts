@@ -244,6 +244,7 @@ export class ProtoView {
     const dtSec = this.lastTimeMs < 0 ? 0 : Math.min(0.1, (timeMs - this.lastTimeMs) / 1000);
     this.lastTimeMs = timeMs;
     this.fence.update(timeMs / 1000, dtSec);
+    this.stage.update(timeMs / 1000);
     for (const pl of w.players) {
       const m = this.players[pl.side]!;
       const pp = pl.side !== me && foeDisplay ? foeDisplay : this.playerPos(pl.side, alpha);

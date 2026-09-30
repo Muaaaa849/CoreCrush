@@ -1,0 +1,46 @@
+{
+  "source": "Poly Haven（https://polyhaven.com/models）。全て CC0 1.0。1K テクスチャの glTF を取得し、meshopt＋KTX2 の glb にする",
+  "textureSize": 512,
+  "models": [
+    {
+      "id": "security_light",
+      "simplify": 1
+    },
+    {
+      "id": "Barrel_01",
+      "simplify": 0.6
+    },
+    {
+      "id": "barrel_03",
+      "simplify": 1
+    },
+    {
+      "id": "barrel_stove",
+      "simplify": 0.5
+    },
+    {
+      "id": "exterior_aircon_unit",
+      "simplify": 0.4
+    },
+    {
+      "id": "modular_industrial_pipes_01",
+      "simplify": 0.6
+    },
+    {
+      "id": "old_tyre",
+      "simplify": 0.7
+    },
+    {
+      "id": "power_box_01",
+      "simplify": 0.35
+    },
+    {
+      "id": "security_camera_01",
+      "simplify": 0.4
+    },
+    {
+      "id": "propane_tank",
+      "simplify": 0.8
+    }
+  ]
+}
