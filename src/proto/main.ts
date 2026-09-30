@@ -8,6 +8,10 @@ import { NO_INPUT, type PlayerInput, type Side, type SimEvent, type World } from
 import { OnlineSession } from '../net/session';
 import { connect, type ConnectStatus, type WebRtcTransport } from '../net/webrtc';
 import { KeyboardMouse } from '../input/keyboardMouse';
+import { TouchControls } from '../input/touchControls';
+import { parseLayout } from '../input/touchLayout';
+import { TouchLayoutEditor } from '../ui/touchLayoutEditor';
+import { throwTypeFromInput } from '../sim/throwType';
 import { CameraRig, DEFAULT_CAMERA, type CameraSettings } from '../render/cameraRig';
 import { ProtoView, faceStage } from '../render/protoView';
 
@@ -90,6 +94,42 @@ async function main(): Promise<void> {
 
   const input = new KeyboardMouse(view.renderer.domElement);
 
+  // --- タッチ操作（スマホ横持ち）。?touch=1 で PC でも出せる ---
+  const touchMode = new URLSearchParams(location.search).get('touch') === '1' || matchMedia('(pointer: coarse)').matches;
+  if (touchMode) document.documentElement.classList.add('touchMode');
+  const tc = new TouchControls(document.body, parseLayout(store<unknown>('cc.touchLayout', null)));
+  const playing = () => input.locked || tc.active;
+  const refreshMenu = () => {
+    const on = playing();
+    $('menu').hidden = on || editor.isOpen;
+    $('hud').hidden = !on && world.tick === 0;
+    tc.root.hidden = !(tc.active || editor.isOpen);
+    $('play').textContent = world.tick === 0 ? (touchMode ? 'タップで開始' : 'クリックで開始') : '再開';
+  };
+  const editor = new TouchLayoutEditor(tc, (layout, saved) => {
+    if (saved) save('cc.touchLayout', layout);
+    refreshMenu();
+  });
+  tc.onPause = () => {
+    tc.active = false;
+    refreshMenu();
+  };
+  $('touchLayout').addEventListener('click', () => {
+    editor.open();
+    refreshMenu();
+  });
+  // 試合終了時の「もう一度」（キーボードの R の代わり）
+  const rematchBtn = document.createElement('button');
+  rematchBtn.type = 'button';
+  rematchBtn.className = 'tcRematch';
+  rematchBtn.hidden = true;
+  tc.root.append(rematchBtn);
+  const rematch = () => {
+    if (online) online.session.requestRematch();
+    else newMatch();
+  };
+  rematchBtn.addEventListener('click', rematch);
+
   // --- メニュー ---
   const sens = $<HTMLInputElement>('sens');
   const fov = $<HTMLInputElement>('fov');
@@ -120,6 +160,19 @@ async function main(): Promise<void> {
     bot.profile = BOTS[botLevel] ?? BOTS.normal!;
   });
   const start = async () => {
+    if (touchMode) {
+      // 横持ちの全画面にする（対応していない端末・埋め込み表示では何もしない）
+      try {
+        if (!document.fullscreenElement) await document.documentElement.requestFullscreen?.({ navigationUI: 'hide' });
+        await (screen.orientation as unknown as { lock?: (o: string) => Promise<void> }).lock?.('landscape');
+      } catch {
+        /* 全画面・向きの固定はできなくても遊べる */
+      }
+      tc.active = true;
+      tc.applyLayout();
+      refreshMenu();
+      return;
+    }
     try {
       await input.lock();
     } catch {
@@ -131,29 +184,26 @@ async function main(): Promise<void> {
     newMatch();
     void start();
   });
-  document.addEventListener('pointerlockchange', () => {
-    const locked = input.locked;
-    $('menu').hidden = locked;
-    $('hud').hidden = !locked && world.tick === 0;
-    $('play').textContent = world.tick === 0 ? 'クリックで開始' : '再開';
-  });
+  document.addEventListener('pointerlockchange', refreshMenu);
+  refreshMenu();
   input.onKey = (code) => {
     if (code === 'F3') {
       showFrames = !showFrames;
       $('frames').hidden = !showFrames;
     }
-    if (code === 'KeyR' && world.phase === 'matchOver') {
-      if (online) online.session.requestRematch();
-      else newMatch();
-    }
+    if (code === 'KeyR' && world.phase === 'matchOver') rematch();
   };
   $('status').textContent = `描画: ${view.backend}　準備完了`;
 
   // --- 1 tick ぶんの人間の入力 ---
+  const clamp1 = (v: number) => Math.max(-1, Math.min(1, v));
+  /** 球種・移動の生の方向（キー＋スティック。右・前が +） */
+  const rawRight = () => clamp1(input.axis(input.bindings.left, input.bindings.right) + tc.stickX);
+  const rawForward = () => clamp1(input.axis(input.bindings.back, input.bindings.forward) + tc.stickY);
+  const secondaryHeld = () => input.secondaryHeld || tc.secondaryHeld;
   const humanInput = (): PlayerInput => {
-    const b = input.bindings;
-    const kr = input.axis(b.left, b.right);
-    const kf = input.axis(b.back, b.forward);
+    const kr = rawRight();
+    const kf = rawForward();
     // カメラ基準の移動 → ワールド → コート基準
     const fwd = rig.forward({ x: 0, y: 0, z: 0 });
     const fl = Math.hypot(fwd.x, fwd.z) || 1;
@@ -167,16 +217,18 @@ async function main(): Promise<void> {
     }
     const fz = forwardZ(ME);
     const e = input.takeEdges();
+    const t = tc.takeEdges();
+    // スキルは sim 未実装（M4）。t.skill1 / t.skill2 / t.summon は PlayerInput に項目ができたらここで渡す
     return {
       moveRight: -wx * fz,
       moveForward: wz * fz,
       keyRight: kr,
       keyForward: kf,
-      primary: e.primary,
-      secondary: e.secondary,
-      secondaryHeld: input.secondaryHeld,
-      fake: e.fake,
-      step: e.step,
+      primary: e.primary || t.primary,
+      secondary: e.secondary || t.secondary,
+      secondaryHeld: secondaryHeld(),
+      fake: e.fake || t.fake,
+      step: e.step || t.step,
       aimDir: rig.forward({ x: 0, y: 0, z: 0 }),
     };
   };
@@ -224,7 +276,7 @@ async function main(): Promise<void> {
         }, 1800);
         break;
       case 'matchEnd':
-        $('banner').textContent = e.side === ME ? 'YOU WIN — R でもう一度' : 'YOU LOSE — R でもう一度';
+        $('banner').textContent = (e.side === ME ? 'YOU WIN' : 'YOU LOSE') + (touchMode ? '' : ' — R でもう一度');
         break;
       default:
         break;
@@ -300,7 +352,7 @@ async function main(): Promise<void> {
     if (world.phase === 'matchOver' && s.localWants >= 0) {
       $('banner').textContent = s.remoteWants === s.localWants ? '再戦を開始します…' : '再戦を希望しました — 相手を待っています';
     } else if (world.phase === 'matchOver' && s.remoteWants >= 0) {
-      $('banner').textContent = '相手が再戦を希望しています — R で再戦';
+      $('banner').textContent = touchMode ? '相手が再戦を希望しています' : '相手が再戦を希望しています — R で再戦';
     }
     return true;
   };
@@ -363,14 +415,18 @@ async function main(): Promise<void> {
 
   // --- ループ（固定 60Hz） ---
   const foePos = { x: 0, z: 0 };
+  const preview: PlayerInput = { ...NO_INPUT };
   let last = performance.now();
   let acc = 0;
   const frame = (now: number) => {
     const dt = Math.min(100, now - last);
     last = now;
-    if (input.locked) {
+    if (playing()) {
       const [dx, dy] = input.takeMouse();
       rig.look(dx, dy, settings);
+      const [tx, ty] = tc.takeLook();
+      const k = (tc.layout.lookDegPerPx * Math.PI) / 180;
+      rig.turn(-tx * k, -ty * k);
       acc += dt;
       let steps = 0;
       while (acc >= TICK_MS && steps < 5) {
@@ -389,6 +445,8 @@ async function main(): Promise<void> {
       if (steps === 5) acc = 0;
     } else {
       input.takeMouse();
+      tc.takeLook();
+      tc.takeEdges();
       // オンラインは一時停止できない（ロックが外れていても無入力で進める）
       if (online) {
         acc += dt;
@@ -402,10 +460,20 @@ async function main(): Promise<void> {
       } else acc = 0;
     }
     const onlinePeer = online?.session.peer ?? null;
-    const alpha = input.locked || onlinePeer ? acc / TICK_MS : 1;
+    const alpha = playing() || onlinePeer ? acc / TICK_MS : 1;
     const me = world.players[ME];
     const pos = view.playerPos(ME, alpha);
-    rig.update(dt, pos, CameraRig.wantsFps(me), input.secondaryHeld && me.holding, settings, balance);
+    rig.update(dt, pos, CameraRig.wantsFps(me), secondaryHeld() && me.holding, settings, balance);
+    if (tc.active) {
+      // 所持中は、いま投げたら出る球種をスティックとボタンに示す
+      preview.keyRight = rawRight();
+      preview.keyForward = rawForward();
+      preview.secondaryHeld = secondaryHeld();
+      tc.setState(me.holding, me.holding ? throwTypeFromInput(balance, preview) : null);
+      const over = world.phase === 'matchOver';
+      rematchBtn.hidden = !over || (online !== null && online.session.localWants >= 0);
+      if (over) rematchBtn.textContent = online ? '再戦' : 'もう一度';
+    }
     const foeDisplay = onlinePeer && onlinePeer.remoteDisplayPos(alpha, foePos) ? foePos : null;
     view.render(world, alpha, rig, ME, now, foeDisplay);
     updateHud();

@@ -79,6 +79,61 @@ button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px s
 .online input[type=url], .online input[type=text] { min-width: 0; width: 100%; box-sizing: border-box; background: rgba(0,0,0,0.35); color: inherit; border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; padding: 6px 8px; font: inherit; }
 .onlineRow { display: grid; grid-template-columns: auto 1fr auto; gap: 6px; align-items: center; }
 .online button { padding: 6px 10px; }
+
+/* --- タッチ操作（スマホ横持ち）。部品の位置・大きさは JS が layout から置く --- */
+:root:not(.touchMode) .touchOnly { display: none; }
+:root.touchMode .keyOnly { display: none; }
+:root.touchMode body { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.menu { z-index: 20; }
+.tc { position: fixed; inset: 0; z-index: 10; touch-action: none; -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
+.tcCtl { position: absolute; box-sizing: border-box; border-radius: 50%; opacity: var(--tc-opacity, .75); }
+.tcBtn { display: grid; place-content: center; text-align: center; gap: .1em; background: rgba(12, 15, 24, .55); border: 2px solid rgba(227, 233, 245, .55); color: var(--fg); font-family: var(--font-body); line-height: 1.1; }
+.tcBtn b { font-weight: 700; white-space: nowrap; }
+.tcBtn small { font: 600 .72em/1 var(--font-mono); color: var(--warn); white-space: nowrap; }
+.tcBtn small:empty { display: none; }
+.tcBtn.pressed { background: rgba(227, 233, 245, .35); transform: scale(.94); }
+.tc-throw, .tc-parry { border-color: var(--me); box-shadow: 0 0 12px color-mix(in srgb, var(--me) 45%, transparent); }
+.tc-throw b, .tc-parry b { color: var(--me); }
+.tc-catch, .tc-aim { border-color: color-mix(in srgb, var(--me) 60%, #fff); }
+.tc-aim.on { background: color-mix(in srgb, var(--me) 40%, transparent); }
+.tc-fake { border-color: var(--warn); } .tc-fake b { color: var(--warn); }
+.tc-skill1, .tc-skill2, .tc-summon { border-color: var(--foe); } .tc-skill1 b, .tc-skill2 b, .tc-summon b { color: var(--foe); }
+.tc-pause { border-radius: 8px; }
+.tcBtn.empty { border-style: dashed; opacity: calc(var(--tc-opacity, .75) * .6); }
+.tc-stick { background: radial-gradient(circle, rgba(12, 15, 24, .25), rgba(12, 15, 24, .55)); border: 2px solid rgba(227, 233, 245, .4); }
+.tcKnob { position: absolute; left: 50%; top: 50%; width: 42%; height: 42%; border-radius: 50%; background: rgba(227, 233, 245, .55); border: 2px solid rgba(255, 255, 255, .8); transform: translate(-50%, -50%); pointer-events: none; }
+.tc-stick.pressed .tcKnob { background: color-mix(in srgb, var(--me) 55%, transparent); }
+.tcDir { position: absolute; font: 700 1em/1 var(--font-body); color: var(--muted); white-space: nowrap; pointer-events: none; text-shadow: 0 0 4px #000; }
+.tcDir.up { left: 50%; top: -1.4em; transform: translateX(-50%); }
+.tcDir.down { left: 50%; bottom: -1.4em; transform: translateX(-50%); }
+.tcDir.left { right: 100%; top: 50%; transform: translate(-.4em, -50%); }
+.tcDir.right { left: 100%; top: 50%; transform: translate(.4em, -50%); }
+.tcDir.on { color: var(--warn); }
+.tc:not(.holding) .tcDir { display: none; }
+.tc.editing { background: rgba(4, 5, 9, .55); }
+.tc.editing .tcCtl { opacity: .9; cursor: grab; }
+.tc.editing .tcCtl.selected { outline: 2px dashed var(--warn); outline-offset: 4px; }
+.tcRematch { position: absolute; left: 50%; top: 48%; transform: translateX(-50%); }
+.tcPanel { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(400px, 44vw); max-height: 96vh; cursor: move; overflow: auto; box-sizing: border-box; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; display: grid; gap: 6px; font-size: 12px; }
+:root.touchMode .menu .actions { order: -1; }
+:root.touchMode .menu .box { padding: 16px; gap: 12px; }
+.tcPanel label { display: grid; grid-template-columns: 5.5em 1fr auto; align-items: center; gap: 6px; }
+.tcPanel label.tcCheck { grid-template-columns: auto 1fr; }
+.tcPanel output { font: 11px var(--font-mono); }
+.tcHint { margin: 0; color: var(--muted); font-size: 11px; }
+.tcTabs, .tcActions { display: flex; gap: 6px; flex-wrap: wrap; }
+.tcPanel button { padding: 6px 10px; font-size: 12px; }
+.tcTabs button { flex: 1; background: transparent; color: var(--fg); border: 1px solid var(--line); }
+.tcTabs button.on { background: var(--me); color: #041016; }
+/* タッチ時の HUD: 下はスティックとボタンが使うので、カードを上の左右へ小さく寄せる */
+:root.touchMode .card { top: calc(8px + env(safe-area-inset-top, 0px)); bottom: auto; width: min(200px, 24vw); padding: 6px 8px; gap: 4px; }
+:root.touchMode .card.me { left: calc(12vmin + 16px); }
+:root.touchMode .top { top: calc(6px + env(safe-area-inset-top, 0px)); gap: 12px; }
+:root.touchMode .count { font-size: 24px; }
+:root.touchMode .toasts { top: 30%; }
+:root.touchMode .banner { top: 22%; }
+.rotate { position: fixed; inset: 0; z-index: 30; display: none; place-content: center; text-align: center; gap: 8px; background: var(--bg); font: 700 20px/1.4 var(--font-display); padding: 16px; }
+@media (orientation: portrait) { :root.touchMode .rotate { display: grid; } }
 </style>
 
 <div id="stage"></div>
@@ -113,7 +168,18 @@ button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px s
       <p>ボット相手の 1v1。2ラウンド先取。見た目は仮で、確かめたいのは「フリ→ストレート」「回避方向」「ラリー」の手触りです。</p>
     </div>
     <div class="cols">
-      <div class="keys">
+      <div class="keys touchOnly">
+        <kbd>左スティック</kbd><span>移動（カメラ基準）</span>
+        <kbd>右側ドラッグ</kbd><span>視点（ボタンを押したまま滑らせても可）</span>
+        <kbd>投げる</kbd><span>所持時。スティックの向きで球種: 前・無入力＝ストレート / 左右＝カーブ / 後ろ＝上カーブ</span>
+        <kbd>狙い</kbd><span>所持時。押すと ON（ズーム）→ 投げるで狙い投げ</span>
+        <kbd>フリ</kbd><span>投げるフリ（ゲージ 0.25）</span>
+        <kbd>跳ね返し</kbd><span>非所持時。スティックの向きで球種を打ち分け</span>
+        <kbd>キャッチ</kbd><span>非所持時</span>
+        <kbd>ステップ</kbd><span>スティックの方向へ 5m（無入力なら後ろ）</span>
+        <kbd>Ⅱ</kbd><span>一時停止（配置は下の「ボタン配置」で変更）</span>
+      </div>
+      <div class="keys keyOnly">
         <kbd>WASD</kbd><span>移動（カメラ基準）</span>
         <kbd>マウス</kbd><span>視点</span>
         <kbd>左クリック</kbd><span>所持: 投げる / 非所持: 跳ね返し</span>
@@ -136,6 +202,7 @@ button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px s
           <option value="hard">つよい（ほぼ跳ね返す）</option>
           <option value="dummy">的（何もしない）</option>
         </select><span></span></label>
+        <div class="touchOnly"><button id="touchLayout" type="button" class="ghost">ボタン配置・大きさ・視点感度</button></div>
         <div class="status" id="status">起動中…</div>
         <fieldset class="online" id="onlineBox">
           <legend>オンライン対戦</legend>
@@ -155,4 +222,5 @@ button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px s
     </div>
   </div>
 </div>
+<div class="rotate" aria-live="polite"><div>画面を横向きにしてください</div><div class="status">CORE-CRUSH は横持ちで遊びます</div></div>
 <script>/*__BUNDLE__*/</script>

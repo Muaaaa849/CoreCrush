@@ -40,8 +40,13 @@ export class CameraRig {
 
   look(dx: number, dy: number, s: CameraSettings): void {
     const k = (DEG_PER_COUNT * s.sensitivity * Math.PI) / 180;
-    this.yaw -= dx * k;
-    this.pitch = Math.max(-PITCH_LIMIT, Math.min(PITCH_LIMIT, this.pitch - dy * k));
+    this.turn(-dx * k, -dy * k);
+  }
+
+  /** タッチの視点ドラッグ用: ラジアンで直接回す（左・上が +） */
+  turn(dYaw: number, dPitch: number): void {
+    this.yaw += dYaw;
+    this.pitch = Math.max(-PITCH_LIMIT, Math.min(PITCH_LIMIT, this.pitch + dPitch));
   }
 
   forward(out: { x: number; y: number; z: number }): typeof out {

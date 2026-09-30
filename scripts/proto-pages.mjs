@@ -14,6 +14,6 @@ mkdirSync(dir, { recursive: true });
 const body = readFileSync(built, 'utf8');
 const html = body.trimStart().toLowerCase().startsWith('<!doctype')
   ? body
-  : `<!doctype html>\n<html lang="ja">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1">\n</head>\n<body>\n${body}\n</body>\n</html>\n`;
+  : `<!doctype html>\n<html lang="ja">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n</head>\n<body>\n${body}\n</body>\n</html>\n`;
 writeFileSync(resolve(dir, 'index.html'), html);
 console.log('workers/signaling/public/index.html');
