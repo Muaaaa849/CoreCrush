@@ -1,4 +1,54 @@
-# 進捗ログ
+# 進捗
+
+> **コンテキスト圧縮・新セッションの後は、まずこの「現在の状態」と「作業中」を読む。**
+> ここは常に最新に書き換える。下の「ログ」は追記のみ。
+
+## 現在の状態（2026-09-30 更新）
+
+### マイルストーン
+| M | 状態 |
+|---|---|
+| M0 技術検証 | 完了。WebGPURenderer 採用（暫定、ADR 0001）。ミドルノート PC での再計測は M3 で |
+| M1 ローカルの芯 | 進行中。sim・不変条件テスト・箱キャラ試作まで完了。プレイテスト1回目のフィードバックを反映中（下の「作業中」） |
+| M2〜M5 | 未着手 |
+
+### 公開物（claude.ai Artifact。プランナーはローカルにファイルを持たない）
+- 箱キャラ試作: https://claude.ai/artifact/HZRBvv3kNFYov2Bbpdv8KN（`npm run proto:artifact` → `dist-lab/core-crush-proto.html` を同じパスで再公開すると URL 維持）
+- M0 計測ラボ: https://claude.ai/artifact/HjjEjbyddmbB7RVXvD5PDc（結果は db コレクション `m0Results`、ArtifactData で読める）
+
+### コードの現状
+- `src/sim/`: 固定60Hz。誘導曲線の飛翔（ADR 0002）、投擲・フリ・キャッチ（ジャスト）・跳ね返し・ステップ・8秒カウント・爆発・自動取得・ラウンド。
+- `src/bot/simpleBot.ts`、`src/input/keyboardMouse.ts`、`src/render/{cameraRig,protoView}.ts`、`src/proto/`（試作）。
+- テスト 106 件緑（`npm test`）。感度チェック `npm run test:mutation` は 14 変異すべて赤。`npm run validate:data` OK。
+- hooks: main への push 拒否、既存 `data/balance.json` の変更は ask（`.claude/hooks/guard.mjs`）。
+- harness-forge スキル導入済み（`.claude/skills/harness-forge/`）。
+- ブランチ: `claude/zealous-fermat-dnuy3b`（リモートのデフォルトブランチもこれ）。
+
+### 決定済みの要点（詳細は open-questions.md の「回答」）
+- フリ→ストレートは「見てから」。攻撃5・距離13m以内で保証。空振り硬直48F（受付終了から）、ステップ・スキルで中断可。
+- キャッチ猶予・ジャスト幅は防御で変化（中央値でジャスト2F）。防御9〜10＋iron_grip で跳ね返しと並ぶのは許容（Q-28 回答）。
+- ラリーは受けた球×1.06（乗算・上限なし）。天井8m・上カーブ頂点最大6m。ステップ5m、方向はコート固定。
+- ドローコール予算はシーン本体で150。提案 0001（実装側で置いた数値）は承認済み。D-9 はステップ回復の式を正とする。
+
+## 作業中: プレイテスト1回目のフィードバック反映（未着手・未コミット）
+プランナーの指示（2026-09-30）と実装方針:
+1. **球速を全体に少し速く** → 案: straight/aimed 32→35、curveLeft/Right 23→25、lob 17→19（m/s）。
+   `data/balance.json` の変更（hook で ask が出る。承認済みの方向性）。提案記録 `docs/proposals/0002-playtest1-tuning.md` を作る。
+2. **キャッチ・跳ね返しを早押ししないといけない感覚をなくす**。原因（回答済み）: 発生フレーム（キャッチ2F・跳ね返し1F）＋描画の補間遅れ最大1F＋入力の読み取り最大1F。
+   判定は「球の中心が胸に届いた瞬間」でキャラより前ではない。
+   → `catch.startupF` 2→0、`parry.startupF` 1→0。描画は球を前後 tick の補間ではなく外挿（cur + (cur−prev)·alpha）にして遅れを消す。
+   INV-01 の余裕が発生短縮で2F減るが、球速35で約2F増えるので相殺見込み。テストで要確認。
+3. **跳ね返しでも移動キーで球種を打ち分け**（W/無入力=ストレート、A/D=左右カーブ、S=上カーブ）。速さは受けた球×1.06 のまま。
+   球種判定（world.ts の throwTypeFromInput）を共通モジュールに出し、judge/arrival.ts の跳ね返しで使う（狙い投げは除く）。
+   FlightKind の 'parry' を廃止し、返球も球種名にする（ラリー回数は ball.rally）。invariants INV-12・テスト・ボット（返球方向をランダムに）を更新。
+4. **拾える範囲を広く** → `player.pickupRadiusM` 0.9→1.3。
+5. **ストレートは左右ステップで回避、前後は被弾**（Q-29 の回答）→ straight の `evade` を `["left","right"]` に。
+   INV-03 の期待表・CLAUDE.md の不変条件要約（「ストレート=全方向」）・invariants.md・open-questions（Q-29 回答）を更新。
+6. Q-28 回答: validate-data の iron_grip 警告を「許容（防御キャラの特権）」に変更。INV-06 に追記。
+7. 提案 0001 を承認済みに、D-9 を確定に更新。
+8. 反映後: `npm test`・`npm run test:mutation`・`npm run validate:data`・typecheck → 試作を再ビルドして同じ URL に再公開 → progress 更新 → コミット・push。
+
+## ログ
 
 ## 2026-09-30 セッション1（コード未着手）
 - やったこと: GDD v1.0 を `docs/gdd/GDD.md` に配置。CLAUDE.md、`.claude/rules/`（netcode/render/vfx/data）、

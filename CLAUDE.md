@@ -80,7 +80,8 @@ docs/gdd/ docs/decisions/ docs/proposals/ docs/playtest/ docs/progress.md
 4. 不変条件に関わる変更は、対応する不変条件テストが緑であることを確認する。
 5. 設計判断（GDD の推奨より良い手法を採った場合を含む）は `docs/decisions/NNNN-<slug>.md` に書く。
    形式: 背景 / 決定 / 代替案 / 不変条件への影響 / 撤回条件。
-6. セッション終了時に `docs/progress.md` へ「やったこと / 次 / 未解決」を追記する。
+6. セッション終了時に `docs/progress.md` へ「やったこと / 次 / 未解決」を追記し、冒頭の「現在の状態」「作業中」を書き換える。
+   **コンテキスト圧縮・新セッションの後は、まず `docs/progress.md` の冒頭を読んで再開する。**
 
 ## 数値変更のルール
 - `data/balance.json` はプランナー承認なしに変更しない。
