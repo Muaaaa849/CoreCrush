@@ -10,12 +10,12 @@
 |---|---|
 | M0 技術検証 | 完了。WebGPURenderer 採用（暫定、ADR 0001）。ミドルノート PC での再計測は M3 で |
 | M1 ローカルの芯 | 完了（2026-09-30 プレイテスト2回目で「いいと思う」）。コート拡張ほか提案0003を反映済み |
-| M2 オンライン | 実装・テスト完了（遅延注入マトリクス緑、実 WebRTC e2e 緑）。**プランナーの Cloudflare デプロイ待ち**（docs/online-setup.md） |
+| M2 オンライン | 実装・テスト完了。Cloudflare にデプロイ済み（TURN は未設定）。**実回線の対戦テスト待ち** |
 | M3〜M5 | 未着手 |
 
 ### 公開物（claude.ai Artifact。プランナーはローカルにファイルを持たない）
 - 箱キャラ試作: https://claude.ai/artifact/HZRBvv3kNFYov2Bbpdv8KN（`npm run proto:artifact` → `dist-lab/core-crush-proto.html` を同じパスで再公開すると URL 維持）
-- オンライン対戦: デプロイ後 `https://core-crush-signaling.<サブドメイン>.workers.dev/`（Artifact 版はボット戦のみ）
+- オンライン対戦: https://core-crush-signaling.phantom82509673.workers.dev/ （ブランチへの push で自動デプロイ。Artifact 版はボット戦のみ）
 - M0 計測ラボ: https://claude.ai/artifact/HjjEjbyddmbB7RVXvD5PDc（結果は db コレクション `m0Results`、ArtifactData で読める）
 
 ### コードの現状
@@ -36,7 +36,7 @@
 - 回避方向: ストレート=左右 / 左右カーブ=前後 / 上カーブ=左右（Q-29）。跳ね返しも移動キーで球種を選ぶ（狙い投げ不可）。
 
 ## 作業中
-なし。待ち: (1) プランナーの Cloudflare デプロイ（docs/online-setup.md）→ 実回線の対戦テスト、(2) Q-30・提案0003 の確認事項への回答。
+なし。待ち: (1) プランナーの実回線での対戦テスト（TURN は後で設定予定）、(2) Q-30・提案0003 の確認事項への回答。
 次の候補: M2 の仕上げ（相手の 100ms 補間表示、再戦、切断処理、投げ手側の結果待ちの見せ方）→ M3（見た目）。
 
 ## ログ
@@ -137,4 +137,10 @@
   投げ手側で球が相手に届いてから結果が来るまで止まって見える（≒RTT）の見せ方、HUD の色（役割1でも自分がシアン表示）。
 - プランナーにお願い: docs/online-setup.md の手順で Worker をデプロイ → 2台（または2つのブラウザ）で対戦し、
   (1) つながるか、(2) キャッチ・跳ね返しのタイミングが遅延で変わらないか、(3) 相手の動きのカクつき、(4) 自分が投げた球が相手に届いて止まる時間、を確認。
+
+## 2026-09-30 セッション2（デプロイ確認）
+- プランナーが Workers Builds でデプロイ。push ごとに GitHub のコミットに「Workers Builds: core-crush-signaling」のチェックが付く。
+- 確認できたこと（クラウド環境から）: ページ配信 200、`/ice` は STUN のみ（TURN 未設定時の想定どおり）、部屋コード検証 400・非 WebSocket 426。
+- 直したこと: Worker 配信のページに doctype と文字コードが無く日本語が化けていた → `proto:pages` で骨組みを付ける。HUD の色（役割1）。
+- 確認できなかったこと: 部屋の WebSocket（クラウド環境のプロキシが WebSocket を通さない）。ローカルの wrangler dev では e2e 済み。
 
