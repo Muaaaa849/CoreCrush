@@ -1,12 +1,13 @@
 // 箱キャラ試作の描画（M1）。sim の状態を読むだけで書き換えない。
 import * as THREE from 'three/webgpu';
 import type { Balance } from '../sim/balance';
-import type { Player, World } from '../sim/types';
+import type { Player, SimEvent, World } from '../sim/types';
 import { clamp, color, dot, float, materialEmissive, normalView, positionViewDirection, uniform } from 'three/tsl';
 import { PostPipeline, RENDER_LOOK, type PostDebugView } from './postPipeline';
 import type { QualityPreset } from './quality';
 import { Stage } from './stage';
 import { CoreFace } from '../vfx/coreFace';
+import { PlasmaFence } from '../vfx/plasmaFence';
 
 export type FaceStage = 'smile' | 'nervous' | 'angry' | 'blink' | 'crack';
 
@@ -51,6 +52,9 @@ export class ProtoView {
   private readonly stage: Stage;
   private ball: THREE.Mesh;
   private readonly face = new CoreFace();
+  private readonly fence: PlasmaFence;
+  private readonly fenceTouchZ: number;
+  private lastTimeMs = -1;
   private ballShadow: THREE.Mesh;
   private prev: Snap = { px: [0, 0], pz: [0, 0], bx: 0, by: 0, bz: 0, bMode: '', bThrower: -1, bRally: 0 };
   private cur: Snap = { px: [0, 0], pz: [0, 0], bx: 0, by: 0, bz: 0, bMode: '', bThrower: -1, bRally: 0 };
@@ -65,14 +69,10 @@ export class ProtoView {
     this.post.configure(quality);
     this.stage = new Stage(this.scene, b, RENDER_LOOK.stage, PLAYER_COLOR);
 
-    // プラズマ・フェンス（仮。手順4 で TSL のシェーダーにする）
-    const W = b.court.widthM;
-    const fence = new THREE.Mesh(
-      new THREE.PlaneGeometry(W, 3),
-      new THREE.MeshStandardMaterial({ color: 0x35f2ff, emissive: 0x35f2ff, emissiveIntensity: 0.25, transparent: true, opacity: 0.07, side: THREE.DoubleSide, depthWrite: false }),
-    );
-    fence.position.set(0, 1.5, 0);
-    this.scene.add(fence);
+    // プラズマ・フェンス（TSL。球の通過で波紋と閃光）
+    this.fence = new PlasmaFence(b.court.widthM);
+    this.scene.add(this.fence.mesh);
+    this.fenceTouchZ = b.court.fenceClearanceM + b.player.bodyRadiusM + 0.05;
 
     const r = b.player.bodyRadiusM;
     const h = b.player.bodyHeightM;
@@ -201,6 +201,11 @@ export class ProtoView {
     c.bMode = w.ball.mode; c.bThrower = w.ball.thrower; c.bRally = w.ball.rally;
   }
 
+  /** sim のイベント（演出だけ。sim は書き換えない） */
+  onSimEvent(e: SimEvent, w: World): void {
+    if (e.kind === 'cross') this.fence.cross(w.ball.pos.x, w.ball.pos.y);
+  }
+
   /** 補間済みの位置（カメラ追従用） */
   playerPos(side: 0 | 1, alpha: number): { x: number; z: number } {
     return {
@@ -234,12 +239,16 @@ export class ProtoView {
     me: 0 | 1, timeMs: number, foeDisplay: { x: number; z: number } | null = null,
   ): void {
     const b = w.balance;
+    const dtSec = this.lastTimeMs < 0 ? 0 : Math.min(0.1, (timeMs - this.lastTimeMs) / 1000);
+    this.lastTimeMs = timeMs;
+    this.fence.update(timeMs / 1000, dtSec);
     for (const pl of w.players) {
       const m = this.players[pl.side]!;
       const pp = pl.side !== me && foeDisplay ? foeDisplay : this.playerPos(pl.side, alpha);
       m.position.x = pp.x;
       m.position.z = pp.z;
       this.playerBlobs[pl.side]!.position.set(pp.x, 0.005, pp.z);
+      if (Math.abs(pp.z) <= this.fenceTouchZ) this.fence.touch(pl.side, pp.x, b.player.bodyHeightM * 0.6);
       this.playerRims[pl.side]!.value = pl.side === me ? 0 : this.rimHdr;
       // 自分は FPS のとき隠す。相手は常に自分の方を向く
       m.visible = !(pl.side === me && cam.blend > 0.5);

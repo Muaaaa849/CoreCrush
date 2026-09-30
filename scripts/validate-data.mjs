@@ -76,5 +76,11 @@ else {
   if (face.faceHdr * face.heldDim >= render.bloom.threshold) fail('coreFace: 所持中（heldDim）でもブルームのしきい値を超える（視界を遮る）');
 }
 
+// プラズマ・フェンス（GDD 13）
+const fence = load('data/vfx/plasmaFence.json');
+const validateP = ajv.compile(load('schemas/plasmaFence.schema.json'));
+if (!validateP(fence)) for (const e of validateP.errors ?? []) fail(`vfx/plasmaFence.json${e.instancePath} ${e.message}`);
+else if (fence.heightM > balance.court.ceilingM) fail('plasmaFence.heightM が天井より高い');
+
 if (failed) process.exit(1);
-console.log('OK  data/balance.json, data/quality.json, data/render.json, data/vfx/coreFace.json');
+console.log('OK  data/balance.json, data/quality.json, data/render.json, data/vfx/coreFace.json, data/vfx/plasmaFence.json');

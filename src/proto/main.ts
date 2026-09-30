@@ -388,6 +388,7 @@ async function main(): Promise<void> {
   };
   const who = (side: number) => (side === ME ? 'あなた' : foeName());
   const onEvent = (e: SimEvent) => {
+    view.onSimEvent(e, world);
     switch (e.kind) {
       case 'justCatch':
         toast(e.side === ME ? 'JUST CATCH!' : `${foeName()} ジャスト`, e.side === ME ? '#35f2ff' : '#ff2bd6');

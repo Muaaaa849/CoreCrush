@@ -1,0 +1,38 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CORE-CRUSH プラズマ・フェンス（GDD 13）",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["heightM", "colorA", "colorB", "baseHdr", "streakHdr", "fresnelHdr", "noiseScale", "scrollMps", "topFadeM", "ripple", "flash"],
+  "definitions": {
+    "hex": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
+    "low": { "description": "常時の発光: ブルームのしきい値（1.0）未満", "type": "number", "minimum": 0, "exclusiveMaximum": 1 }
+  },
+  "properties": {
+    "heightM": { "type": "number", "exclusiveMinimum": 0 },
+    "colorA": { "$ref": "#/definitions/hex" },
+    "colorB": { "$ref": "#/definitions/hex" },
+    "baseHdr": { "$ref": "#/definitions/low" },
+    "streakHdr": { "$ref": "#/definitions/low" },
+    "fresnelHdr": { "$ref": "#/definitions/low" },
+    "noiseScale": { "type": "array", "items": { "type": "number", "exclusiveMinimum": 0 }, "minItems": 2, "maxItems": 2 },
+    "scrollMps": { "type": "number" },
+    "topFadeM": { "type": "number", "minimum": 0 },
+    "ripple": {
+      "description": "ヒット波紋。最大数は uniform の配列長で固定（vfx 規則）",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["max", "speedMps", "widthM", "lifeSec", "crossHdr", "touchHdr", "touchCooldownSec"],
+      "properties": {
+        "max": { "const": 4 },
+        "speedMps": { "type": "number", "exclusiveMinimum": 0 },
+        "widthM": { "type": "number", "exclusiveMinimum": 0 },
+        "lifeSec": { "type": "number", "exclusiveMinimum": 0 },
+        "crossHdr": { "description": "球の通過（一瞬なのでコアより明るくてよいが短く）", "type": "number", "minimum": 0 },
+        "touchHdr": { "type": "number", "minimum": 0 },
+        "touchCooldownSec": { "type": "number", "minimum": 0 }
+      }
+    },
+    "flash": { "type": "object", "additionalProperties": false, "required": ["hdr", "decaySec"], "properties": { "hdr": { "type": "number", "minimum": 0 }, "decaySec": { "type": "number", "exclusiveMinimum": 0 } } }
+  }
+}
