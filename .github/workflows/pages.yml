@@ -1,0 +1,41 @@
+# 試作ページ（オンライン込み）を GitHub Pages に置く。Cloudflare のビルド待ち（7〜15分）を避けて早く確認するため。
+# 対戦のシグナリングは今までどおり Cloudflare Worker（workers.dev）を使う。
+name: Pages
+
+on:
+  push:
+    branches: [claude/zealous-fermat-dnuy3b]
+    paths-ignore: ['docs/**', '**/*.md', 'tests/**', 'bench/**']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 新しい push が来たら古いデプロイは途中でやめる
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+      - run: npm run proto:gh-pages
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: dist-pages
+      - id: deployment
+        uses: actions/deploy-pages@v5

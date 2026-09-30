@@ -18,6 +18,16 @@
 
 画面の項目名が違っていたら、その画面の文言を教えてください（手順を直します）。
 
+## 1b. GitHub Pages（確認用のページ。こちらが早い）
+- URL: https://muaaaa849.github.io/CoreCrush/ （オンライン対戦もできる。シグナリングは上の Worker を使う）
+- `.github/workflows/pages.yml` が push ごとに `npm run proto:gh-pages` でページを作って置く（docs・テストだけの push では動かない）。
+  GitHub のリポジトリ → Actions の「Pages」で進み具合が見える。
+- メニューの「準備完了　版 xxxxxxx」がコミットの短い番号。古い版に見えたら再読み込み（GitHub Pages は最大10分ほど古い版を返すことがある）。
+- ページの設定・localStorage（ボタン配置・計測履歴）はオリジンごと。workers.dev 版と github.io 版では別々に保存される。
+- Cloudflare 側のビルドを減らすなら: Worker `core-crush-signaling` → 設定 → ビルド → **ビルドの監視パス（Build watch paths）** の
+  「含める」を `workers/signaling/*` にする。以後、ページだけの変更では Cloudflare はビルドしない
+  （そのぶん workers.dev のページは古いまま残る。確認は GitHub Pages で）。
+
 ## 2. TURN（任意。つながらない回線のため）
 STUN だけでも多くの家庭回線はつながる。会社・学校・一部のモバイル回線でつながらないときに設定する。
 1. Cloudflare → **Realtime** → **TURN Server** → キーを作成。**Key ID** と **API Token** が出る。

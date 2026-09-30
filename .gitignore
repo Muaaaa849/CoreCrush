@@ -7,3 +7,4 @@ dist-lab/
 .wrangler/
 .dev.vars
 workers/signaling/public/
+dist-pages/

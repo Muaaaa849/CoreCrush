@@ -17,7 +17,8 @@
     "test:e2e:net": "node scripts/e2e-net.mjs",
     "test:mutation": "node scripts/mutation-check.mjs",
     "proto:artifact": "node scripts/build-artifact.mjs src/proto/main.ts src/proto/template.html dist-lab/core-crush-proto.html --no-online",
-    "proto:pages": "node scripts/proto-pages.mjs"
+    "proto:pages": "node scripts/proto-pages.mjs",
+    "proto:gh-pages": "node scripts/proto-pages.mjs --out=dist-pages --server=https://core-crush-signaling.phantom82509673.workers.dev"
   },
   "dependencies": {
     "three": "0.186.1"

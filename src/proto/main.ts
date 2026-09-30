@@ -22,6 +22,12 @@ const SILENCE_WARN_SEC = 3;
 /** ビルド時の定数。false（Artifact 版）ではオンライン対戦のコードを含めない */
 declare const __ONLINE__: boolean;
 const ONLINE_ENABLED = typeof __ONLINE__ === 'undefined' ? true : __ONLINE__;
+/** シグナリングサーバーの既定値（GitHub Pages 版は workers.dev。空なら同じオリジン） */
+declare const __DEFAULT_SERVER__: string;
+const DEFAULT_SERVER = typeof __DEFAULT_SERVER__ === 'undefined' ? '' : __DEFAULT_SERVER__;
+/** 版番号（コミットの短い番号）。古い版を見ていないかの確認用 */
+declare const __BUILD__: string;
+const BUILD = typeof __BUILD__ === 'undefined' ? 'dev' : __BUILD__;
 
 const BOTS: Record<string, BotProfile> = {
   easy: { holdMinTicks: 60, holdMaxTicks: 240, fakeChance: 0.1, catchChance: 0.15, parryChance: 0.15, stepChance: 0.05 },
@@ -311,7 +317,7 @@ async function main(): Promise<void> {
     }
     if (code === 'KeyR' && world.phase === 'matchOver') rematch();
   };
-  $('status').textContent = `描画: ${view.backend}　準備完了`;
+  $('status').textContent = `描画: ${view.backend}　準備完了　版 ${BUILD}`;
 
   // --- 1 tick ぶんの人間の入力 ---
   const clamp1 = (v: number) => Math.max(-1, Math.min(1, v));
@@ -483,7 +489,7 @@ async function main(): Promise<void> {
   const q = new URLSearchParams(location.search);
   // Worker から配られたページ（workers.dev・ローカル）は同じオリジンがシグナリングサーバー
   const sameOrigin = /(\.workers\.dev|^localhost|^127\.0\.0\.1)$/.test(location.hostname) ? location.origin : '';
-  serverIn.value = q.get('server') ?? store<string>('cc.server', sameOrigin);
+  serverIn.value = q.get('server') ?? store<string>('cc.server', sameOrigin || DEFAULT_SERVER);
   roomIn.value = q.get('room') ?? '';
   const joinOnline = async (room: string) => {
     if (!ONLINE_ENABLED) return;

@@ -16,7 +16,8 @@
 
 ### 公開物（claude.ai Artifact。プランナーはローカルにファイルを持たない）
 - 箱キャラ試作: https://claude.ai/artifact/HZRBvv3kNFYov2Bbpdv8KN（`npm run proto:artifact` → `dist-lab/core-crush-proto.html` を同じパスで再公開すると URL 維持）
-- オンライン対戦: https://core-crush-signaling.phantom82509673.workers.dev/ （ブランチへの push で自動デプロイ。Artifact 版はボット戦のみ）
+- **確認用ページ（推奨）**: https://muaaaa849.github.io/CoreCrush/ （GitHub Pages。push から数分。オンライン対戦も可。メニューに版番号）
+- オンライン対戦（Worker 配信）: https://core-crush-signaling.phantom82509673.workers.dev/ （Cloudflare のビルドが 7〜15 分かかる。シグナリングはこの Worker）
 - M0 計測ラボ: https://claude.ai/artifact/HjjEjbyddmbB7RVXvD5PDc（結果は db コレクション `m0Results`、ArtifactData で読める）
 
 ### コードの現状
@@ -219,3 +220,9 @@
   3. 「結果をコピー」してチャットに貼る（全回ぶんが入る）。端末名（機種）も一緒に教えてほしい。
   4. （任意）M3 相当の重さの基準シーン: M0 計測ラボ https://claude.ai/artifact/HjjEjbyddmbB7RVXvD5PDc をスマホで開いて 2・3 を実行（結果は自動保存）。
 - 次: 結果から、スマホで M3 の画質をどこまで出せるかを見積もり、画質段階（低・中・高: 描画解像度・ブルーム・影・パーティクル数）を設計する。
+
+## 2026-09-30 セッション3（確認用ページを GitHub Pages に）
+- 背景: Cloudflare Workers Builds が push から公開まで 7〜15 分（ビルドより順番待ちが長い）。プランナーが Pages の設定（Source: GitHub Actions）を済ませた。
+- やったこと: `.github/workflows/pages.yml`（push で `npm run proto:gh-pages` → GitHub Pages）。ページのシグナリング既定値は workers.dev（`--server=`、Worker は CORS 許可済みを確認）。
+  メニューに版番号（コミットの短い番号、`__BUILD__`）。手順は `docs/online-setup.md` の 1b。
+- 任意: Cloudflare のビルド監視パスを `workers/signaling/*` にすればページだけの変更でビルドが走らない（手順は online-setup.md）。
