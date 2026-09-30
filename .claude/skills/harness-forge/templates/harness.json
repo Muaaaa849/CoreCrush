@@ -1,0 +1,10 @@
+{
+  "gate": "{{GATE}}",
+  "verify_cmd": "bash .harness/{slug}/verify.sh",
+  "verify_timeout_sec": 900,
+  "max_iterations": {{MAX_ITERATIONS}},
+  "max_same_failure": 3,
+  "extra_protected_paths": [],
+  "extra_deny_commands": [],
+  "extra_ask_commands": []
+}

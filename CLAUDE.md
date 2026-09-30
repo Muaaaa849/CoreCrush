@@ -95,7 +95,9 @@ docs/gdd/ docs/decisions/ docs/proposals/ docs/playtest/ docs/progress.md
 
 ## 難しい問題・ループが必要なとき
 - 機械で合否を判定できる反復作業（不変条件テスト化、性能予算、遅延注入など）は、
-  `/loop` や自分で使えるコマンドで回してよい。harness-forge 等の常設ハーネスが欲しいときはプランナーに提案する。
+  `/loop` や自分で使えるコマンドで回してよい。
+- 常設ハーネスは `/harness-forge <目的> --mode ...`（`.claude/skills/harness-forge/`、Muaaaa849/hernes から導入）。
+  生成物は `.harness/<slug>/`。verify.sh と contract.yaml の変更（完了条件の変更）はプランナーの承認が必要。
 - 行き詰まったら、試したこと・仮説・次の一手を `docs/progress.md` に書いてから相談する。
 
 ## 手触りの扱い

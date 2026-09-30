@@ -1,0 +1,42 @@
+# Task contract for harness "{{SLUG}}"  (created {{DATE}})
+# 自然言語の依頼を、実行前に「測定可能な契約」に変換したもの。ビルダーは編集不可 (protected)。
+# 最重要は done_when: これが無いとエージェントは「少し簡単な別問題」を解いて完了を宣言できてしまう。
+
+objective: >
+  {{OBJECTIVE}}
+
+# 目的の背後にある「なぜ」。トレードオフ判断で迷ったときの拠り所。
+intent: TODO
+
+inputs:            # エージェントが参照してよい一次情報 (パス / URL / コネクタ)
+  - TODO
+
+constraints:       # 途中で絶対に変えてはいけないこと (不変条件)
+  - TODO
+
+non_goals:         # スコープ外。ここに手を出したら失敗とみなす
+  - TODO
+
+deliverable:       # 最終成果物の形 (PR / ファイル / レポート / 投稿下書き ...)
+  - TODO
+
+done_when:         # 完了の証拠。各項目は verify.sh のチェック、または verifier の判定項目に 1:1 で対応させる
+  - id: D1
+    claim: TODO                 # 例: "既存テストと新規回帰テストがすべて通る"
+    evidence: TODO              # 例: "npm test exits 0"
+    kind: deterministic         # deterministic | visual | judgment
+  - id: D2
+    claim: TODO
+    evidence: TODO
+    kind: judgment
+
+approval_required: # 人間の承認が要る行為 (guard.py の ask_commands と対応)
+  - external publish / deploy / send / purchase
+
+budget:
+  max_iterations: {{MAX_ITERATIONS}}
+  max_same_failure: 3
+  wall_clock: TODO             # 例: 2h
+  spend: TODO                  # 例: headless は --max-budget-usd, workflow はエージェント数上限
+
+rollback: TODO                 # 失敗時にどう戻すか (branch を捨てる / git revert / 下書き削除)

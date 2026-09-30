@@ -1,0 +1,10 @@
+{
+  "slug": "{{SLUG}}",
+  "current_step": "",
+  "completed": [],
+  "decisions": [],
+  "facts": [],
+  "artifacts": [],
+  "open_risks": [],
+  "next_action": "read contract.yaml and map.md, then take the smallest step toward done_when D1"
+}
