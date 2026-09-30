@@ -43,6 +43,7 @@ export function giveBall(w: World, side: Side): void {
   ball.countTicks = 0;
   ball.freezeTicks = 0;
   handOf(w.balance, p, ball.pos);
+  w.ballAuth = side;
 }
 
 /** 中央線からの距離でプレイヤーを置く */

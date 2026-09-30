@@ -3,6 +3,7 @@ import { secToTicks } from '../balance';
 import { courtCenter } from '../court';
 import { copy, set } from '../math';
 import { currentSide, other } from '../ball';
+import { hasBallAuthority } from '../authority';
 import { emit } from '../events';
 import { setAction } from './arrival';
 import type { World } from '../types';
@@ -22,11 +23,17 @@ export function updateCount(w: World): void {
     ball.freezeTicks--;
     return;
   }
+  const limit = secToTicks(b, b.count.explodeSec);
+  // 通信対戦で判定権がないときは表示用に数えるだけ（爆発は判定権を持つ側のイベントで確定）
+  if (!hasBallAuthority(w)) {
+    ball.countTicks = Math.min(ball.countTicks + 1, limit - 1);
+    return;
+  }
   ball.countTicks++;
-  if (ball.countTicks >= secToTicks(b, b.count.explodeSec)) explode(w);
+  if (ball.countTicks >= limit) explode(w);
 }
 
-function explode(w: World): void {
+export function explode(w: World): void {
   const b = w.balance;
   const ball = w.ball;
   const victim = w.players[ball.side];
@@ -46,4 +53,6 @@ function explode(w: World): void {
   ball.countTicks = 0;
   ball.freezeTicks = secToTicks(b, b.count.postExplosionFreezeSec);
   ball.rally = 0;
+  ball.pending = false;
+  w.ballAuth = next;
 }

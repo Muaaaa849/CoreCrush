@@ -7,6 +7,7 @@ import {
   advanceFlight, advanceLinear, advanceLoose, chestOf, handOf, launchFlight, launchLinear, other,
 } from './ball';
 import { classifyStep, clampToOwnCourt, courtCenter, courtToWorld, spawnPoint, stepDirsIntersect } from './court';
+import { hasBallAuthority } from './authority';
 import { createEventBuffer, emit } from './events';
 import { resolveArrival, setAction } from './judge/arrival';
 import { updateCount } from './judge/count';
@@ -20,6 +21,8 @@ export interface WorldOptions {
   stats: [Stats, Stats];
   /** iron_grip 等のキャッチ受付加算（M4 でスキルから与える） */
   catchBonusF?: [number, number];
+  /** 通信対戦で自分が操作する側（省略時 -1 = 両者を動かす） */
+  local?: Side | -1;
 }
 
 function createPlayer(b: Balance, side: Side, stats: Stats, catchBonusF: number): Player {
@@ -42,6 +45,7 @@ function createPlayer(b: Balance, side: Side, stats: Stats, catchBonusF: number)
     stepDirs: { front: false, back: false, left: false, right: false },
     wins: 0,
     input: { ...NO_INPUT },
+    netActionStart: -1,
   };
 }
 
@@ -51,7 +55,7 @@ function createBall(): Ball {
     countTicks: 0, freezeTicks: 0,
     thrower: 0, receiver: 1, kind: 'straight', speedMps: 0, powerMul: 1,
     start: vec3(), target: vec3(), u: 0, lateralM: 0, apexM: 0, homing: false, evaded: false,
-    evade: { front: false, back: false, left: false, right: false }, rally: 0, bounces: 0,
+    evade: { front: false, back: false, left: false, right: false }, rally: 0, bounces: 0, pending: false,
   };
 }
 
@@ -68,6 +72,8 @@ export function createWorld(b: Balance, opts: WorldOptions): World {
     ball: createBall(),
     events: createEventBuffer(),
     eventCount: 0,
+    local: opts.local ?? -1,
+    ballAuth: -1,
   };
   startRound(w);
   return w;
@@ -99,6 +105,8 @@ export function startRound(w: World): void {
   ball.freezeTicks = secToTicks(b, b.count.roundStartFreezeSec);
   ball.rally = 0;
   ball.bounces = 0;
+  ball.pending = false;
+  w.ballAuth = side;
   emit(w, 'roundStart', side, w.round);
 }
 
@@ -238,6 +246,8 @@ function tryPickup(w: World, p: Player): void {
   const ball = w.ball;
   if (ball.mode !== 'loose' || p.holding) return;
   if (ball.side !== p.side) return;
+  // 通信対戦: 拾えるのは判定権を持っているときだけ（受け渡し中・相手の判定中は拾わない）
+  if (w.ballAuth !== p.side) return;
   const a = p.action;
   if (!(a === 'idle' || a === 'step' || a === 'throwRecovery' || a === 'fakeRecovery')) return;
   if (ball.pos.y > b.player.pickupMaxHeightM) return;
@@ -275,21 +285,28 @@ function updateBall(w: World): void {
       handOf(b, h, ball.pos);
       return;
     }
-    case 'flight': {
-      const r = advanceFlight(w);
-      if (r === 'contact') resolveArrival(w);
-      else if (r === 'miss') emit(w, 'miss', ball.receiver);
-      return;
-    }
+    case 'flight':
     case 'linear': {
-      const r = advanceLinear(w);
-      if (r === 'contact') resolveArrival(w);
-      else if (r === 'miss') emit(w, 'miss', ball.receiver);
+      // 相手の判定待ち（通信対戦）: 結果のイベントが届くまで止める
+      if (ball.pending) return;
+      const r = ball.mode === 'flight' ? advanceFlight(w) : advanceLinear(w);
+      if (r === 'contact') {
+        if (hasBallAuthority(w)) resolveArrival(w);
+        else ball.pending = true;
+      } else if (r === 'miss') emit(w, 'miss', ball.receiver);
       return;
     }
     case 'loose':
       advanceLoose(w);
   }
+}
+
+/** 転がる球が判定権を持つ側のコートから出たら、判定権をそのコートの側へ渡す */
+function handoverLoose(w: World): void {
+  const ball = w.ball;
+  if (ball.mode !== 'loose' || !hasBallAuthority(w) || w.ballAuth === ball.side) return;
+  w.ballAuth = ball.side;
+  emit(w, 'handover', ball.side);
 }
 
 function checkKo(w: World): void {
@@ -332,6 +349,11 @@ export function stepWorld(w: World, inputs: readonly [PlayerInput, PlayerInput])
     return;
   }
   for (const p of w.players) {
+    if (w.local !== -1 && p.side !== w.local) {
+      // 相手: 行動・位置は net 層が与える。ここでは経過 tick だけ進める（表示用）
+      p.actionTick++;
+      continue;
+    }
     copyInput(p.input, inputs[p.side]);
     advanceAction(w, p);
     handleInput(w, p, p.input);
@@ -339,8 +361,9 @@ export function stepWorld(w: World, inputs: readonly [PlayerInput, PlayerInput])
   }
   updateBall(w);
   updateCount(w);
+  handoverLoose(w);
   recoverSteps(w);
-  for (const p of w.players) tryPickup(w, p);
+  for (const p of w.players) if (w.local === -1 || p.side === w.local) tryPickup(w, p);
   // 所持中はボールの位置を手元に合わせる
   if (w.ball.mode === 'held' && w.ball.holder !== -1) handOf(w.balance, w.players[w.ball.holder], w.ball.pos);
   checkKo(w);

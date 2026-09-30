@@ -14,8 +14,9 @@ type Defense = 'none' | 'catch' | 'parry' | 'step';
 function scenario(defense: Defense, pressAt: number, balance?: DeepPartial<Balance>): { hit: boolean; w: World } {
   const w = makeWorld({ balance });
   const b = w.balance;
-  place(w, 0, b.court.spawnFromCenterM);
-  place(w, 1, b.invariants.fakeGuaranteeDistanceM - b.court.spawnFromCenterM);
+  // 両者を中央線から同じ距離に置き、保証距離だけ離す
+  place(w, 0, b.invariants.fakeGuaranteeDistanceM / 2);
+  place(w, 1, b.invariants.fakeGuaranteeDistanceM / 2);
   giveBall(w, 0);
   w.players[0].meter = 1;
   let whiffAt = -1;

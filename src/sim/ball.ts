@@ -62,6 +62,8 @@ export function launchFlight(
   ball.evaded = false;
   stepDirsFrom(data.evade, ball.evade);
   ball.rally = rally;
+  ball.pending = false;
+  w.ballAuth = to.side;
 }
 
 export function launchLinear(w: World, from: Player, speedMps: number, powerMul: number, dir: Vec3): void {
@@ -84,6 +86,8 @@ export function launchLinear(w: World, from: Player, speedMps: number, powerMul:
   ball.evaded = false;
   ball.evade.front = ball.evade.back = ball.evade.left = ball.evade.right = false;
   ball.rally = 0;
+  ball.pending = false;
+  w.ballAuth = ball.receiver;
 }
 
 /** 実効の横膨らみ・頂点（天井・側壁の手前に収める） */

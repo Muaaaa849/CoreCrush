@@ -80,6 +80,8 @@ export interface Player {
   wins: number;
   /** 直近の入力（投擲の球種判定に使う） */
   input: PlayerInput;
+  /** 通信対戦: 相手の現在の行動を相手の時計で始めた tick（同じ行動のやり直しを見分ける） */
+  netActionStart: number;
 }
 
 export type BallMode = 'held' | 'flight' | 'linear' | 'loose';
@@ -115,6 +117,8 @@ export interface Ball {
   rally: number;
   // --- loose ---
   bounces: number;
+  /** 通信対戦: 相手が判定する飛翔が相手に届き、結果待ち（この間ボールは動かさない） */
+  pending: boolean;
 }
 
 export type Phase = 'play' | 'roundEnd' | 'matchOver';
@@ -134,6 +138,8 @@ export type SimEventKind =
   | 'homingCancelled'
   | 'pickup'
   | 'cross'
+  /** 転がる球の判定権がコートの側へ移った（通信対戦の受け渡し） */
+  | 'handover'
   | 'roundStart'
   | 'roundEnd'
   | 'matchEnd';
@@ -158,4 +164,11 @@ export interface World {
   /** この tick に起きたイベント（毎 tick 先頭でクリア。要素は使い回す） */
   events: SimEvent[];
   eventCount: number;
+  /**
+   * 通信対戦で自分が操作する側。-1 は1台で両者を動かす（オフライン・テスト）。
+   * 通信対戦では相手の行動・位置は net 層から与えられ、相手が判定する結果は相手のイベントで確定する（受け手権威）。
+   */
+  local: Side | -1;
+  /** ボールの判定権を持つ側。-1 は受け渡し中（誰も判定しない）。オフラインでも追跡する */
+  ballAuth: Side | -1;
 }

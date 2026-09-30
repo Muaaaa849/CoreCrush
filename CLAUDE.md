@@ -44,7 +44,7 @@
 src/sim/        固定60Hzのゲームロジック。three・DOM・時刻API・Math.random 非依存
 src/sim/judge/  キャッチ・跳ね返し・被弾・爆発・カウントの判定（受け手権威の判定点）
 src/sim/effects/ スキル効果部品（buff_next_throw, projectile, pull ...）
-src/net/        WebRTC DataChannel、シグナリングクライアント、権威移譲
+src/net/        プロトコル・トランスポート（ループバック／WebRTC）・NetPeer（ADR 0003）
 src/render/     three/webgpu 描画、カメラ、補間
 src/vfx/        TSL シェーダー、パーティクル（プール）
 src/input/      キーバインド（KeyboardEvent.code）、Pointer Lock
@@ -68,9 +68,9 @@ docs/gdd/ docs/decisions/ docs/proposals/ docs/playtest/ docs/progress.md
 - 乱数は sim 内のシード付き RNG のみ。試合中の `new`（オブジェクト生成）はプールで避ける。
 
 ## コマンド（予定。package.json 作成時に実体と一致させる）
-- 実在: `npm run dev` / `build` / `typecheck` / `test` / `test:sim` / `test:mutation`（感度チェック） / `validate:data`
+- 実在: `npm run dev` / `build` / `typecheck` / `test` / `test:sim` / `test:net`（遅延注入） / `test:mutation`（感度チェック） / `validate:data`
   / `m0:headless` / `m0:lab` / `proto:artifact`
-- 予定: `npm run test:net` / `npm run bench` / `npm run lint`
+- 予定: `npm run bench` / `npm run lint`
 - クラウドで Playwright を使うときは `CHROMIUM_PATH=/opt/pw-browsers/chromium`（`playwright install` はしない）
 
 ## 作業の流れ

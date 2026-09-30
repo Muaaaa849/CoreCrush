@@ -13,6 +13,7 @@
     "m0:lab": "vite build --config src/m0/lab/vite.lab.config.ts && node src/m0/lab/assemble.mjs",
     "validate:data": "node scripts/validate-data.mjs",
     "test:sim": "vitest run tests/sim",
+    "test:net": "vitest run tests/net",
     "test:mutation": "node scripts/mutation-check.mjs",
     "proto:artifact": "node scripts/build-artifact.mjs src/proto/main.ts src/proto/template.html dist-lab/core-crush-proto.html"
   },
