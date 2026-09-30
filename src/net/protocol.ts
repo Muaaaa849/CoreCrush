@@ -1,5 +1,6 @@
 // DataChannel のメッセージ（バイナリ・固定レイアウト、リトルエンディアン）。スキーマを変えたら PROTOCOL_VERSION を上げる。
-// 共通の先頭: [版数 u8][種類 u8][試合番号 u8]。試合番号が違うもの（前の試合の遅れて届いた分）は捨てる。
+// 共通の先頭: [版数 u8][種類 u8][試合番号 u8]。state は続けて往復時間計測用の ack（相手の tick と経過）。
+// 試合番号が違うもの（前の試合の遅れて届いた分）は捨てる。
 // - state（非信頼）: 自分の状態。直近 STATE_REDUNDANCY 件を冗長同梱（GDD 11.2）
 // - event（信頼）: 判定権を持つ側が確定させたイベント＋その時点のボール状態
 // - hello（信頼）: 試合開始の合意（役割 0 → 1）。rematch（信頼）: 再戦の希望
@@ -7,7 +8,7 @@ import type { ThrowTypeName } from '../sim/balance';
 import { AUTH_EVENT_KINDS, createBallWire, type AuthEvent, type AuthEventKind, type RemoteState } from '../sim/judge/remote';
 import type { Action, BallMode, Side } from '../sim/types';
 
-export const PROTOCOL_VERSION = 2;
+export const PROTOCOL_VERSION = 3;
 export const STATE_REDUNDANCY = 4;
 const MSG_STATE = 1;
 const MSG_EVENT = 2;
@@ -23,7 +24,7 @@ const MODES: readonly BallMode[] = ['held', 'flight', 'linear', 'loose'];
 const THROW_TYPES: readonly ThrowTypeName[] = ['straight', 'curveLeft', 'curveRight', 'lob', 'aimed'];
 
 const STATE_ENTRY_BYTES = 4 + 2 + 4 + 4 + 1 + 2 + 2 + 4 + 1 + 4 + 2;
-const STATE_HEADER_BYTES = HEADER_BYTES + 1;
+const STATE_HEADER_BYTES = HEADER_BYTES + 1 + 4 + 2;
 const EVENT_BYTES = HEADER_BYTES + 4 + 4 + 2 + 1 + 1 + 8 + 8 + 1 + (1 + 1 + 1 + 8 * 3 + 8 * 3 + 2 + 2 + 1 + 1 + 1 + 8 + 8 + 8 * 3 + 8 * 3 + 8 + 8 + 1 + 2 + 1);
 
 function idx<T>(list: readonly T[], v: T): number {
@@ -43,10 +44,16 @@ export interface Hello {
   seed: number;
 }
 
+/** 往復時間の計測: 相手の最新の tick と、受け取ってから送るまでの自分の tick 数（ackTick < 0 は未受信） */
+export interface Ack {
+  tick: number;
+  age: number;
+}
+
 export type MessageType = 'state' | 'event' | 'hello' | 'rematch';
 
 export type Decoded =
-  | { type: 'state'; match: number; states: RemoteState[] }
+  | { type: 'state'; match: number; states: RemoteState[]; ack: Ack }
   | { type: 'event'; match: number; event: AuthEvent }
   | { type: 'hello'; match: number; hello: Hello }
   | { type: 'rematch'; match: number };
@@ -83,12 +90,14 @@ export function encodeRematch(match: number): ArrayBuffer {
 }
 
 /** states は新しい順に最大 STATE_REDUNDANCY 件 */
-export function encodeState(match: number, states: readonly RemoteState[]): ArrayBuffer {
+export function encodeState(match: number, states: readonly RemoteState[], ack: Ack = { tick: -1, age: 0 }): ArrayBuffer {
   const n = Math.min(states.length, STATE_REDUNDANCY);
   const buf = new ArrayBuffer(STATE_HEADER_BYTES + n * STATE_ENTRY_BYTES);
   const d = new DataView(buf);
   header(d, MSG_STATE, match);
   d.setUint8(HEADER_BYTES, n);
+  d.setInt32(HEADER_BYTES + 1, ack.tick, true);
+  d.setUint16(HEADER_BYTES + 5, Math.min(Math.max(0, ack.age), 0xffff), true);
   let o = STATE_HEADER_BYTES;
   for (let i = 0; i < n; i++) {
     const s = states[i]!;
@@ -161,7 +170,7 @@ export function decode(buf: ArrayBuffer): Decoded {
       });
       o += STATE_ENTRY_BYTES;
     }
-    return { type, match, states };
+    return { type, match, states, ack: { tick: d.getInt32(HEADER_BYTES + 1, true), age: d.getUint16(HEADER_BYTES + 5, true) } };
   }
   let o = HEADER_BYTES;
   const u8 = () => { const v = d.getUint8(o); o += 1; return v; };

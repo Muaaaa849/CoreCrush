@@ -33,6 +33,11 @@ describe('遅延注入マトリクス（両クライアントの一致）', () =
           expect([a.w.players[0].wins, a.w.players[1].wins]).toEqual([b.w.players[0].wins, b.w.players[1].wins]);
           expect(logKey(a)).toBe(logKey(b));
           expect(p.doubleAuthTicks).toBe(0);
+          // 往復時間の推定（tick 刻みと揺れのぶん多めに出る）
+          for (const peer of p.peers) {
+            expect(peer.rttMs).toBeGreaterThanOrEqual(rtt - 10);
+            expect(peer.rttMs).toBeLessThanOrEqual(rtt + 50);
+          }
         }
       });
     }

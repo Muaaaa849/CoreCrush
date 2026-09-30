@@ -263,7 +263,8 @@ async function main(): Promise<void> {
         `あなた  ${me.action} ${me.actionTick}/${me.actionLength || '-'}\n` +
         `${foeName()}  ${foe.action} ${foe.actionTick}/${foe.actionLength || '-'}\n` +
         `ボール  ${ball.mode} ${ball.kind} ${ball.speedMps.toFixed(1)}m/s 追尾:${ball.homing ? 'on' : 'off'} ラリー:${ball.rally}\n` +
-        `カウント ${ball.countTicks}F 停止 ${ball.freezeTicks}F　描画 ${view.backend}`;
+        `カウント ${ball.countTicks}F 停止 ${ball.freezeTicks}F　描画 ${view.backend}` +
+        (online?.session.peer ? `\n通信  往復 ${online.session.peer.rttMs < 0 ? '—' : `${Math.round(online.session.peer.rttMs)}ms`}` : '');
     }
   };
 

@@ -38,6 +38,12 @@ export class NetPeer {
   readonly log: LogEntry[] = [];
   /** 相手から最後に何か届いた自分の tick（無応答の検出用） */
   lastHeardTick = 0;
+  /** 往復時間の推定（ms、指数移動平均。未計測は -1）。表示・診断用 */
+  rttMs = -1;
+  /** 相手の最新の tick と、それを受け取った自分の tick（ack 用） */
+  private remoteNewestTick = -1;
+  private remoteNewestAt = 0;
+  private tmpPos = { x: 0, z: 0 };
   /** 相手のイベントのうち、まだ反映していないもの（ラウンドの先行分） */
   private pendingEvents: AuthEvent[] = [];
   private nextRemoteSeq = 0;
@@ -86,7 +92,8 @@ export class NetPeer {
     // 状態（直近を冗長同梱）
     this.sentStates.unshift(captureState(w, {} as RemoteState));
     if (this.sentStates.length > STATE_REDUNDANCY) this.sentStates.length = STATE_REDUNDANCY;
-    this.transport.send('state', encodeState(this.match, this.sentStates));
+    const ack = { tick: this.remoteNewestTick, age: this.remoteNewestTick < 0 ? 0 : w.tick - this.remoteNewestAt };
+    this.transport.send('state', encodeState(this.match, this.sentStates, ack));
 
     this.receive();
   }
@@ -130,6 +137,15 @@ export class NetPeer {
       const m = decode(buf);
       if (m.type !== 'state' || m.match !== this.match) continue;
       this.lastHeardTick = w.tick;
+      const top = m.states[0];
+      if (top && top.tick > this.remoteNewestTick) {
+        this.remoteNewestTick = top.tick;
+        this.remoteNewestAt = w.tick;
+      }
+      if (m.ack.tick >= 0) {
+        const sample = ((w.tick - m.ack.tick - m.ack.age) * 1000) / w.balance.tickHz;
+        if (sample >= 0) this.rttMs = this.rttMs < 0 ? sample : this.rttMs * 0.9 + sample * 0.1;
+      }
       // 冗長同梱は古い順に入れる（補間の履歴を埋める）
       for (let i = m.states.length - 1; i >= 0; i--) {
         const s = m.states[i]!;
@@ -140,6 +156,13 @@ export class NetPeer {
     if (newest && newest.round === w.round && w.phase === 'play') {
       this.lastRemoteStateTick = newest.tick;
       applyRemoteState(w, newest);
+    }
+    // 判定権のない側の sim で相手が関わるもの（相手へ向かう球の追尾先・相手が持つ球の位置）は表示専用なので、
+    // 相手の位置を補間表示と同じ位置にする（見えている相手の体に球が届く）。判定には影響しない
+    if (w.phase === 'play' && this.track.sample(w.tick, REMOTE_INTERP_DELAY_F, this.tmpPos)) {
+      const p = w.players[this.remote];
+      p.pos.x = this.tmpPos.x;
+      p.pos.z = this.tmpPos.z;
     }
   }
 }
