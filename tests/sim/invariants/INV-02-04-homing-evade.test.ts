@@ -55,9 +55,9 @@ describe('INV-03 球種と回避方向', () => {
     left: { moveRight: -1 },
     right: { moveRight: 1 },
   };
-  // 期待値（GDD 4.1）: none は後方扱い
+  // 期待値（GDD 4.1、ストレートは Q-29 回答で左右のみ）: none は後方扱い
   const expected: Record<string, string[]> = {
-    straight: ['front', 'back', 'none', 'left', 'right'],
+    straight: ['left', 'right'],
     curveLeft: ['front', 'back', 'none'],
     curveRight: ['front', 'back', 'none'],
     lob: ['left', 'right'],

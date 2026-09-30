@@ -7,6 +7,7 @@ const MUTATIONS = [
   ['INV-02 ストレートの追尾を外す', { throw: { types: { straight: { homing: false } } } }],
   ['INV-03 左右カーブを左右ステップで切れるように', { throw: { types: { curveLeft: { evade: ['front', 'back', 'left', 'right'] } } } }],
   ['INV-03 上カーブを前後で切れるように', { throw: { types: { lob: { evade: ['front', 'back'] } } } }],
+  ['INV-03 ストレートを前後ステップで切れるように', { throw: { types: { straight: { evade: ['front', 'back', 'left', 'right'] } } } }],
   ['INV-05 フリのコストを0に', { fake: { cost: 0 } }],
   ['INV-06 キャッチ受付を跳ね返しより長く', { catch: { windowByDefenseF: [10, 10, 10, 10, 10, 10, 10, 10, 10, 10] } }],
   ['INV-07 爆発を9秒に', { count: { explodeSec: 9 } }],

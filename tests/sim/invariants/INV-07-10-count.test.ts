@@ -1,7 +1,7 @@
 // INV-07 8秒カウント / INV-08 溜めるほど強い / INV-09 ステップ回復 / INV-10 開幕と爆発後
 import { describe, expect, it } from 'vitest';
 import { countPowerMul, countSpeedMul, secToTicks, stepRecoverTicks } from '../../../src/sim/balance';
-import { giveBall, has, makeWorld, run, throwAndResolve } from '../helpers';
+import { giveBall, has, makeWorld, place, run, throwAndResolve } from '../helpers';
 
 describe('INV-07 8秒カウントは逃げられない', () => {
   it('持ったままでも 8.0 秒で爆発し、自陣側が固定ダメージ', () => {
@@ -88,12 +88,14 @@ describe('INV-10 開幕と爆発後', () => {
   it('爆発後の新球は被害側から見て相手コートに出て、しばらくカウントしない', () => {
     const w = makeWorld();
     giveBall(w, 0);
+    // 相手（side 1）はコート奥の隅に置き、新球（コート中央）を拾わないようにする
+    place(w, 1, w.balance.court.depthM - 1, w.balance.court.widthM / 2 - 1);
     run(w, secToTicks(w.balance, w.balance.count.explodeSec));
     expect(w.ball.side).toBe(1);
     expect(w.ball.mode).toBe('loose');
     const freeze = secToTicks(w.balance, w.balance.count.postExplosionFreezeSec);
     expect(freeze).toBeGreaterThan(0);
-    // 相手（side 1）は新球の真上にいないので拾わない。カウントは止まったまま
+    // カウントは止まったまま
     run(w, freeze);
     expect(w.ball.countTicks).toBe(0);
   });

@@ -83,7 +83,8 @@ export interface Player {
 }
 
 export type BallMode = 'held' | 'flight' | 'linear' | 'loose';
-export type FlightKind = ThrowTypeName | 'parry';
+/** 飛翔中の球種。返球も球種名（ラリー回数は Ball.rally） */
+export type FlightKind = ThrowTypeName;
 
 export interface Ball {
   mode: BallMode;
@@ -107,7 +108,7 @@ export interface Ball {
   lateralM: number;
   apexM: number;
   homing: boolean;
-  /** 有効方向ステップで追尾解除された球は受け手に当たらない（OPEN: Q-29） */
+  /** 有効方向ステップで追尾解除された球は受け手に当たらない（Q-29） */
   evaded: boolean;
   evade: StepDirs;
   /** 跳ね返しの連続回数（ラリー） */

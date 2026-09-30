@@ -32,6 +32,8 @@ export interface Bot {
   holdTimer: number;
   throwDir: { right: number; forward: number };
   defensePlan: 'none' | 'catch' | 'parry' | 'step' | 'take';
+  /** 跳ね返しで打ち分ける球種の移動入力（跳ね返し中に保持する） */
+  returnDir: { right: number; forward: number };
   plannedFor: number;
   input: PlayerInput;
 }
@@ -44,6 +46,7 @@ export function createBot(side: Side, seed: number, profile: BotProfile = DEFAUL
     holdTimer: -1,
     throwDir: { right: 0, forward: 0 },
     defensePlan: 'none',
+    returnDir: { right: 0, forward: 0 },
     plannedFor: -1,
     input: { moveRight: 0, moveForward: 0, primary: false, secondary: false, secondaryHeld: false, fake: false, step: false, aimDir: null },
   };
@@ -96,6 +99,14 @@ export function botInput(w: World, bot: Bot): PlayerInput {
       const r = nextFloat(bot.rng);
       const p = bot.profile;
       bot.defensePlan = r < p.catchChance ? 'catch' : r < p.catchChance + p.parryChance ? 'parry' : r < p.catchChance + p.parryChance + p.stepChance ? 'step' : 'take';
+      // 返球の球種: ストレート / 左右カーブ / 上カーブ を等確率
+      const k = nextInt(bot.rng, 4);
+      bot.returnDir.right = k === 1 ? -1 : k === 2 ? 1 : 0;
+      bot.returnDir.forward = k === 3 ? -1 : 0;
+    }
+    if (me.action === 'parry') {
+      i.moveRight = bot.returnDir.right;
+      i.moveForward = bot.returnDir.forward;
     }
     if (ball.mode === 'flight' && me.action === 'idle') {
       const t = ticksToArrival(w);

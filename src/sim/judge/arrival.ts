@@ -2,6 +2,7 @@
 import { catchWindowF, justWindowF, countPowerMul } from '../balance';
 import { dropAt, launchFlight } from '../ball';
 import { emit } from '../events';
+import { throwTypeFromInput } from '../throwType';
 import type { Player, World } from '../types';
 
 export function catchWindowActive(w: World, p: Player): boolean {
@@ -46,14 +47,15 @@ export function resolveArrival(w: World): void {
   }
 
   if (parryWindowActive(w, r)) {
-    // 返球はストレート相当の追尾球。速さは受けた球×rallySpeedMul（上限なし。Q-06, Q-26）
+    // 返球の球種は受け手の移動入力で選ぶ（狙い投げは不可）。速さは受けた球×rallySpeedMul（上限なし。Q-06, Q-26）
+    const type = throwTypeFromInput(b, r.input, false);
     const speed = ball.speedMps * b.parry.rallySpeedMul;
     // OPEN: Q-14 返球の威力は返した時点のカウントで計算
     const power = countPowerMul(b, ball.countTicks / b.tickHz);
     setAction(r, 'parryRecovery', b.parry.recoveryF);
     addMeter(w, r, b.parry.gain);
-    launchFlight(w, r, 'parry', speed, power, b.throw.types.straight, ball.rally + 1);
-    emit(w, 'parry', r.side, speed);
+    launchFlight(w, r, type, speed, power, b.throw.types[type], ball.rally + 1);
+    emit(w, 'parry', r.side, speed, type);
     return;
   }
 

@@ -10,6 +10,7 @@ import { classifyStep, clampToOwnCourt, courtCenter, courtToWorld, spawnPoint, s
 import { createEventBuffer, emit } from './events';
 import { resolveArrival, setAction } from './judge/arrival';
 import { updateCount } from './judge/count';
+import { throwTypeFromInput } from './throwType';
 import { copy, distXZ, set, vec3 } from './math';
 import { createRng, nextInt } from './rng';
 import { NO_INPUT, type Ball, type Player, type PlayerInput, type Side, type World } from './types';
@@ -104,18 +105,6 @@ export function startRound(w: World): void {
 const tmp = vec3();
 const tmp2 = vec3();
 
-function throwTypeFromInput(b: Balance, input: PlayerInput): ThrowTypeName {
-  // Q-09 提案: 後ろ入力＝上カーブ ＞ 左右の片方＝左右カーブ ＞ それ以外＝ストレート
-  const th = b.throw.directionInputThreshold;
-  if (input.secondaryHeld) return 'aimed';
-  const right = input.keyRight ?? input.moveRight;
-  const forward = input.keyForward ?? input.moveForward;
-  if (forward <= -th) return 'lob';
-  if (right <= -th) return 'curveLeft';
-  if (right >= th) return 'curveRight';
-  return 'straight';
-}
-
 function release(w: World, p: Player): void {
   const b = w.balance;
   const type = throwTypeFromInput(b, p.input);
@@ -155,7 +144,7 @@ function startStep(w: World, p: Player): boolean {
   const ball = w.ball;
   if (ball.mode === 'flight' && ball.receiver === p.side && ball.homing && stepDirsIntersect(ball.evade, p.stepDirs)) {
     ball.homing = false;
-    ball.evaded = true; // OPEN: Q-29 追尾解除＝回避成立（前後ステップでストレートの軌道上に残っても当たらない）
+    ball.evaded = true; // Q-29 回答: 有効方向で追尾を切った球は当たらない（ストレートの有効方向は左右のみ）
     emit(w, 'homingCancelled', p.side);
   }
   return true;

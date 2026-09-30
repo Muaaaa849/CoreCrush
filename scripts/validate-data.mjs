@@ -22,8 +22,8 @@ if (!validate(balance)) {
     const just = c.justByDefenseF[i];
     if (just > w) fail(`catch.justByDefenseF[${i}]=${just} が受付 ${w}F を超えている`);
     if (w >= p.windowF) fail(`防御${i + 1}: キャッチ受付(${w}F) が跳ね返し受付(${p.windowF}F) 以上（INV-06）`);
-    // OPEN: Q-28 iron_grip(+1F) 込みで並ぶ場合は警告に留める
-    else if (w + 1 >= p.windowF) console.warn(`WARN 防御${i + 1}+iron_grip: キャッチ受付 ${w + 1}F が跳ね返し受付 ${p.windowF}F と並ぶ（Q-28）`);
+    // Q-28 回答: iron_grip(+1F) 込みで跳ね返しと並ぶのは許容（防御キャラの特権）。超えるのは不可
+    else if (w + 1 > p.windowF) fail(`防御${i + 1}+iron_grip: キャッチ受付 ${w + 1}F が跳ね返し受付 ${p.windowF}F を超える（INV-06, Q-28）`);
     if (i > 0 && w < c.windowByDefenseF[i - 1]) fail(`catch.windowByDefenseF が防御の増加で減っている（${i}→${i + 1}）`);
   });
   if (c.gain <= p.gain) fail('キャッチの獲得コスト <= 跳ね返し（INV-06）');

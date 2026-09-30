@@ -183,7 +183,7 @@ async function main(): Promise<void> {
         toast(e.side === ME ? 'CATCH' : 'ボット キャッチ', e.side === ME ? '#35f2ff' : '#ff2bd6');
         break;
       case 'parry':
-        toast(`${e.side === ME ? 'PARRY' : 'ボット 跳ね返し'} ${e.value.toFixed(1)} m/s`, '#ffe066');
+        toast(`${e.side === ME ? 'PARRY' : 'ボット 跳ね返し'} ${e.label} ${e.value.toFixed(1)} m/s`, '#ffe066');
         break;
       case 'whiffCatch':
         toast(`${who(e.side)} キャッチ空振り`, '#8f9ab2');

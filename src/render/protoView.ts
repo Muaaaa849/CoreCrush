@@ -35,6 +35,10 @@ interface Snap {
   bx: number;
   by: number;
   bz: number;
+  /** 飛翔の同一性（モード・投げ手・ラリー回数）。一致するときだけ外挿する */
+  bMode: string;
+  bThrower: number;
+  bRally: number;
 }
 
 export class ProtoView {
@@ -47,8 +51,8 @@ export class ProtoView {
   private ballMat: THREE.MeshStandardMaterial;
   private ballLight: THREE.PointLight;
   private ballShadow: THREE.Mesh;
-  private prev: Snap = { px: [0, 0], pz: [0, 0], bx: 0, by: 0, bz: 0 };
-  private cur: Snap = { px: [0, 0], pz: [0, 0], bx: 0, by: 0, bz: 0 };
+  private prev: Snap = { px: [0, 0], pz: [0, 0], bx: 0, by: 0, bz: 0, bMode: '', bThrower: -1, bRally: 0 };
+  private cur: Snap = { px: [0, 0], pz: [0, 0], bx: 0, by: 0, bz: 0, bMode: '', bThrower: -1, bRally: 0 };
   backend = 'unknown';
 
   private constructor(renderer: THREE.WebGPURenderer, b: Balance) {
@@ -166,11 +170,13 @@ export class ProtoView {
     const c = this.cur;
     p.px[0] = c.px[0]; p.px[1] = c.px[1]; p.pz[0] = c.pz[0]; p.pz[1] = c.pz[1];
     p.bx = c.bx; p.by = c.by; p.bz = c.bz;
+    p.bMode = c.bMode; p.bThrower = c.bThrower; p.bRally = c.bRally;
     for (const pl of w.players) {
       c.px[pl.side] = pl.pos.x;
       c.pz[pl.side] = pl.pos.z;
     }
     c.bx = w.ball.pos.x; c.by = w.ball.pos.y; c.bz = w.ball.pos.z;
+    c.bMode = w.ball.mode; c.bThrower = w.ball.thrower; c.bRally = w.ball.rally;
   }
 
   /** 補間済みの位置（カメラ追従用） */
@@ -215,9 +221,15 @@ export class ProtoView {
     }
     const c = this.cur;
     const p = this.prev;
-    const bx = w.ball.mode === 'held' ? c.bx : p.bx + (c.bx - p.bx) * alpha;
-    const by = w.ball.mode === 'held' ? c.by : p.by + (c.by - p.by) * alpha;
-    const bz = w.ball.mode === 'held' ? c.bz : p.bz + (c.bz - p.bz) * alpha;
+    // 飛翔中の球は補間ではなく外挿（cur + 速度·alpha）で描き、表示の遅れ（最大1tick）を消す。
+    // キャッチ・跳ね返しを「気持ち早く押す」必要が出ないように、見えている球＝判定中の球に揃える。
+    // 同じ飛翔が続いていないとき（投擲・返球の直後など）は外挿しない。
+    const mode = w.ball.mode;
+    const sameFlight = (mode === 'flight' || mode === 'linear') && p.bMode === c.bMode && p.bThrower === c.bThrower && p.bRally === c.bRally;
+    const k = mode === 'held' ? 1 : sameFlight ? 1 + alpha : alpha;
+    const bx = p.bx + (c.bx - p.bx) * k;
+    const by = p.by + (c.by - p.by) * k;
+    const bz = p.bz + (c.bz - p.bz) * k;
     const heldByMe = w.ball.mode === 'held' && w.ball.holder === me;
     // 所持中（FPS）は画面の右下に表示。投げた直後は右下から実際の位置へ寄せる（見た目だけ。判定は sim）
     const f = { x: Math.sin(cam.yaw) * Math.cos(cam.pitch), y: Math.sin(cam.pitch), z: Math.cos(cam.yaw) * Math.cos(cam.pitch) };

@@ -55,19 +55,47 @@ describe('INV-11 ラリー', () => {
 });
 
 describe('INV-12 返した球は返した側のもの', () => {
-  it('返球はストレート相当（全方向で回避可）で、投げ手が入れ替わる', () => {
+  it('返球は無入力でストレート（左右ステップで回避可）になり、投げ手が入れ替わる', () => {
     const w = makeWorld();
     giveBall(w, 0);
     for (let t = 0; t < 60; t++) {
       const ev = tick(w, { primary: t === 0 }, perfectParry(w, 1));
       if (has(ev, 'parry', 1)) break;
     }
-    expect(w.ball.kind).toBe('parry');
+    expect(w.ball.kind).toBe('straight');
+    expect(w.ball.rally).toBe(1);
     expect(w.ball.thrower).toBe(1);
     expect(w.ball.receiver).toBe(0);
     expect(w.ball.homing).toBe(true);
-    expect(w.ball.evade).toEqual({ front: true, back: true, left: true, right: true });
+    expect(w.ball.evade).toEqual({ front: false, back: false, left: true, right: true });
   });
+  const returns: [string, Partial<PlayerInput>, string][] = [
+    ['W', { moveForward: 1 }, 'straight'],
+    ['A', { moveRight: -1 }, 'curveLeft'],
+    ['D', { moveRight: 1 }, 'curveRight'],
+    ['S', { moveForward: -1 }, 'lob'],
+    ['右ボタン保持（狙い投げは不可）', { secondaryHeld: true }, 'straight'],
+  ];
+  for (const [name, move, kind] of returns) {
+    it(`跳ね返しで ${name} → ${kind}（速さは受けた球×1.06、形は球種どおり）`, () => {
+      const w = makeWorld();
+      giveBall(w, 0);
+      let incoming = 0;
+      let returned = 0;
+      for (let t = 0; t < 60 && !returned; t++) {
+        const ev = tick(w, { primary: t === 0 }, { ...move, ...perfectParry(w, 1) });
+        for (const e of ev) {
+          if (e.kind === 'release') incoming = e.value;
+          if (e.kind === 'parry') returned = e.value;
+        }
+      }
+      expect(w.ball.kind).toBe(kind);
+      expect(w.ball.mode).toBe('flight');
+      expect(returned).toBeCloseTo(incoming * w.balance.parry.rallySpeedMul, 6);
+      const data = w.balance.throw.types[kind as 'straight'];
+      expect(w.ball.lateralM).toBe(data.lateralM);
+    });
+  }
   it('上カーブから始まったラリーは遅いまま（受けた球の速さ×1.06）', () => {
     const w = makeWorld();
     giveBall(w, 0);
