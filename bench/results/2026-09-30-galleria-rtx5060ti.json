@@ -1,0 +1,11 @@
+{
+  "device": "GALLERIA",
+  "gpu": { "webgl": "ANGLE (NVIDIA, NVIDIA GeForce RTX 5060 Ti (0x00002D04) Direct3D11 vs_5_0 ps_5_0, D3D11)", "webgpu": "nvidia / blackwell" },
+  "userAgent": "Chrome/152.0.7977.130 Electron/44.4.3 (Claude desktop app, Windows)",
+  "results": {
+    "webgpu": { "medianMs": 3.9, "p95Ms": 6.5, "maxMs": 67.1, "sceneDrawCalls": 83, "drawCalls": 193, "triangles": 591575 },
+    "webgpu-webgl2": { "medianMs": 0.4, "p95Ms": 2.8, "maxMs": 3.2, "sceneDrawCalls": 83, "drawCalls": 191, "triangles": 591573 },
+    "webgl": { "medianMs": 1.6, "p95Ms": 2.0, "maxMs": 2.4, "sceneDrawCalls": 83, "drawCalls": 191, "triangles": 591573 },
+    "pointerlock": { "unadjustedMovement": "yes", "pointerrawupdateAvailable": true, "totalCountsX": 1839, "yawDegAtSens1": 40.46 }
+  }
+}

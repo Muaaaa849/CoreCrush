@@ -1,6 +1,6 @@
 # 0001 M0: レンダラー比較（WebGPU / WebGPURenderer の WebGL2 バックエンド / WebGLRenderer）
 
-- 状態: **保留（実機計測待ち）**
+- 状態: **採用（暫定）** — ミドルノート PC での再計測が残る
 - 日付: 2026-09-30
 - 関連: GDD 12.1, 12.3, 19（M0） / open-questions Q-19, Q-20
 
@@ -43,8 +43,30 @@ GDD は WebGPURenderer＋TSL＋RenderPipeline を推奨し、M0 で WebGL との
 - `createView` の `swizzle` エラーは Chrome と three の組み合わせ次第で本番でも起きうる。
   実機で再現したら、初期化・初回描画の失敗時に `forceWebGL` で作り直すフォールバックを入れる。
 
+## 実機結果（2026-09-30・プランナー環境）
+端末: GALLERIA（デスクトップ）/ GeForce RTX 5060 Ti（WebGPU: nvidia / blackwell）/ Claude デスクトップアプリ（Electron 44・Chrome 152）
+
+| 構成 | 中央値 | p95 | 最大 | 本体DC | 総DC |
+|---|---|---|---|---|---|
+| WebGPURenderer / WebGPU | 3.9ms | 6.5ms | 67.1ms | 83 | 193 |
+| WebGPURenderer / WebGL2 強制 | 0.4ms | 2.8ms | 3.2ms | 83 | 191 |
+| WebGLRenderer | 1.6ms | 2.0ms | 2.4ms | 83 | 191 |
+
+マウス: `unadjustedMovement` 対応（生入力 OK）、`pointerrawupdate` あり。
+
+### 読み方
+- 3方式とも予算（16.6ms）の数分の1。**この端末ではどれを選んでも性能は問題にならない。**
+- WebGPU が数字上は遅いが、同期方法が違う（WebGPU は `onSubmittedWorkDone` の往復、WebGL 系は 1px `readPixels`）ため**方式間の比較には使えない**。
+  WebGL2 強制の 0.4ms は同期が効いていない可能性が高い。正確な比較には GPU タイムスタンプ（`trackTimestamp`）での計測が要る。
+- WebGPU の最大 67ms は初回のシェーダー／パイプライン生成と見られる。試合開始前にウォームアップ描画を入れる。
+- Chrome 152 系では WebGPU が正常に動いた。クラウドの Chrome 141 で出た `swizzle` エラーはブラウザの版の問題と見られる。
+- この端末は GDD の基準（ミドルノート PC）より明らかに強い。**予算の最終判断はノート PC の結果が必要。**
+
 ## 決定（暫定）
-- 実機結果が出るまで、GDD どおり **WebGPURenderer（TSL）を前提**に M1 を進める（M1 は箱キャラ中心で描画依存が小さい）。
+- **WebGPURenderer（TSL）を採用**。GDD の推奨どおり。
+- 初期化・初回描画で失敗したら `forceWebGL` で作り直すフォールバックを入れる（古い Chrome 対策）。
+- 試合開始前にシェーダーのウォームアップ描画を行う（初回の数十 ms の引っかかり対策）。
+- ベンチは M3 で GPU タイムスタンプ計測に切り替え、実ステージでノート PC を含めて再計測する。
 - 切替が必要になった場合の第一候補は **WebGPURenderer の WebGL2 バックエンド強制**（TSL 資産を捨てない）。
 
 ## 撤回条件
