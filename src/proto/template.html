@@ -208,14 +208,12 @@ button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px s
           <option value="hard">つよい（ほぼ跳ね返す）</option>
           <option value="dummy">的（何もしない）</option>
         </select><span></span></label>
-        <label for="pixelRatio">描画解像度 <select id="pixelRatio">
-          <option value="auto">端末に合わせる（最大 2 倍）</option>
-          <option value="2">2 倍</option>
-          <option value="1.5">1.5 倍</option>
-          <option value="1">1 倍</option>
-          <option value="0.75">0.75 倍</option>
-          <option value="0.5">0.5 倍</option>
-        </select><span></span></label>
+        <label for="quality">画質 <select id="quality">
+          <option value="auto">自動（重いと解像度を下げる）</option>
+          <option value="high">高</option>
+          <option value="mid">中</option>
+          <option value="low">低</option>
+        </select><span id="qualityOut"></span></label>
         <label class="check" for="showPerf"><input id="showPerf" type="checkbox"> 性能を表示（FPS・フレーム時間）</label>
         <div class="touchOnly"><button id="touchLayout" type="button" class="ghost">ボタン配置・大きさ・視点感度</button></div>
         <fieldset class="online" id="perfBox">

@@ -15,6 +15,9 @@ import { throwTypeFromInput } from '../sim/throwType';
 import { CameraRig, DEFAULT_CAMERA, type CameraSettings } from '../render/cameraRig';
 import { ProtoView, faceStage } from '../render/protoView';
 import { PerfStats, type PerfSummary } from '../render/perfStats';
+import { AutoResolution, QUALITY, parseQualitySetting, pixelRatioFor, resolveTier, type QualityTier } from '../render/quality';
+
+const QUALITY_LABEL: Record<QualityTier, string> = { high: '高', mid: '中', low: '低' };
 
 const TICK_MS = 1000 / 60;
 /** オンラインで相手から何も届かないとき、警告を出すまでの秒数（表示のみ） */
@@ -96,14 +99,6 @@ async function main(): Promise<void> {
     return;
   }
   const resize = () => view.resize(stage.clientWidth, stage.clientHeight);
-  // 描画解像度（'auto' = 端末の倍率、最大 2）。画質設定の最初のつまみ（M3 で画質段階に広げる）
-  let pixelRatioSetting = store<string>('cc.pixelRatio', 'auto');
-  const applyPixelRatio = () => {
-    const r = pixelRatioSetting === 'auto' ? Math.min(devicePixelRatio, 2) : Number(pixelRatioSetting) || 1;
-    view.setPixelRatio(r);
-    resize();
-  };
-  applyPixelRatio();
   window.addEventListener('resize', resize);
 
   const input = new KeyboardMouse(view.renderer.domElement);
@@ -111,6 +106,20 @@ async function main(): Promise<void> {
   // --- タッチ操作（スマホ横持ち）。?touch=1 で PC でも出せる ---
   const touchMode = new URLSearchParams(location.search).get('touch') === '1' || matchMedia('(pointer: coarse)').matches;
   if (touchMode) document.documentElement.classList.add('touchMode');
+
+  // --- 画質（高・中・低＋自動。Q-31）。自動は端末の既定の段階から、重いと描画解像度を段階的に下げる ---
+  let qualitySetting = parseQualitySetting(store<unknown>('cc.quality', 'auto'));
+  const autoRes = new AutoResolution();
+  let qualityTier = resolveTier(qualitySetting, touchMode);
+  const qualityLabel = () => `${QUALITY_LABEL[qualityTier]}${qualitySetting === 'auto' ? `・解像度 ${autoRes.scale} 倍` : ''}`;
+  const applyQuality = () => {
+    qualityTier = resolveTier(qualitySetting, touchMode);
+    const scale = qualitySetting === 'auto' ? autoRes.scale : 1;
+    view.setPixelRatio(pixelRatioFor(QUALITY.presets[qualityTier], devicePixelRatio, scale));
+    resize();
+    $('qualityOut').textContent = qualityLabel();
+  };
+  applyQuality();
   const tc = new TouchControls(document.body, parseLayout(store<unknown>('cc.touchLayout', null)));
   const playing = () => input.locked || tc.active;
   const refreshMenu = () => {
@@ -173,12 +182,13 @@ async function main(): Promise<void> {
     save('cc.bot', botLevel);
     bot.profile = BOTS[botLevel] ?? BOTS.normal!;
   });
-  const prSel = $<HTMLSelectElement>('pixelRatio');
-  prSel.value = pixelRatioSetting;
-  prSel.addEventListener('change', () => {
-    pixelRatioSetting = prSel.value;
-    save('cc.pixelRatio', pixelRatioSetting);
-    applyPixelRatio();
+  const qSel = $<HTMLSelectElement>('quality');
+  qSel.value = qualitySetting;
+  qSel.addEventListener('change', () => {
+    qualitySetting = parseQualitySetting(qSel.value);
+    save('cc.quality', qualitySetting);
+    autoRes.reset();
+    applyQuality();
   });
 
   // --- 性能表示・計測 ---
@@ -200,7 +210,7 @@ async function main(): Promise<void> {
   const showPerfResults = () => {
     const last = perfHistory[perfHistory.length - 1];
     $('perfStatus').textContent = last
-      ? `前回: ${last.fps} fps・p95 ${last.frameMsP95}ms・18ms 超 ${last.over18Pct}%（解像度 ${String(last.pixelRatio)} 倍・${String(last.canvas)}・${String(last.backend)}）　計 ${perfHistory.length} 回`
+      ? `前回: ${last.fps} fps・p95 ${last.frameMsP95}ms・18ms 超 ${last.over18Pct}%（画質 ${String(last.quality ?? '—')}・解像度 ${String(last.pixelRatio)} 倍・${String(last.canvas)}・${String(last.backend)}）　計 ${perfHistory.length} 回`
       : 'まだ計測していません';
     perfOut.value = perfHistory.length ? JSON.stringify(perfHistory, null, 1) : '';
   };
@@ -222,6 +232,8 @@ async function main(): Promise<void> {
       backend: view.backend,
       gpu: gpuName,
       devicePixelRatio: devicePixelRatio,
+      quality: qualitySetting === 'auto' ? `auto:${qualityTier}` : qualityTier,
+      autoScale: autoRes.scale,
       pixelRatio: view.renderer.getPixelRatio(),
       canvas: `${c.width}x${c.height}`,
       cssViewport: `${innerWidth}x${innerHeight}`,
@@ -258,6 +270,10 @@ async function main(): Promise<void> {
   });
   const updatePerf = (frameMs: number, renderMs: number) => {
     perf.push(frameMs, renderMs);
+    if (qualitySetting === 'auto' && autoRes.push(frameMs)) {
+      applyQuality();
+      toast(`重いので描画解像度を ${autoRes.scale} 倍に下げました`, '#8f9ab2');
+    }
     if (measuring) {
       measuring.playedMs += frameMs;
       if (measuring.playedMs > PERF_WARMUP_MS) measuring.stats.push(frameMs, renderMs);
@@ -278,7 +294,7 @@ async function main(): Promise<void> {
     el.hidden = false;
     const c = view.renderer.domElement;
     const left = measuring ? `　計測 ${Math.max(0, Math.ceil((PERF_WARMUP_MS + PERF_MEASURE_MS - measuring.playedMs) / 1000))}s` : '';
-    el.textContent = `${fps.toFixed(0)} fps  p95 ${p95.toFixed(1)}ms  ${view.backend} ${c.width}×${c.height}${left}`;
+    el.textContent = `${fps.toFixed(0)} fps  p95 ${p95.toFixed(1)}ms  ${view.backend} ${c.width}×${c.height}  画質 ${qualityLabel()}${left}`;
     el.classList.toggle('warn', p95 > 18);
     el.classList.toggle('bad', p95 > 33);
   };

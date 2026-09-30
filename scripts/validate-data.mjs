@@ -35,5 +35,29 @@ if (!validate(balance)) {
     if (name !== 'aimed' && !t.homing) fail(`throw.types.${name}: 狙い投げ以外は追尾必須（INV-02）`);
   }
 }
+
+// 画質段階（Q-31 回答）
+const quality = load('data/quality.json');
+const validateQ = ajv.compile(load('schemas/quality.schema.json'));
+if (!validateQ(quality)) {
+  for (const e of validateQ.errors ?? []) fail(`quality.json${e.instancePath} ${e.message}`);
+} else {
+  const s = quality.auto.scaleSteps;
+  if (s[0] !== 1) fail('quality.auto.scaleSteps の先頭が 1 でない');
+  s.forEach((v, i) => {
+    if (i > 0 && v >= s[i - 1]) fail(`quality.auto.scaleSteps が降順でない（${i}）`);
+  });
+  // 段階が下がるほど重い要素が増えない
+  const order = ['high', 'mid', 'low'];
+  for (let i = 1; i < order.length; i++) {
+    const a = quality.presets[order[i - 1]];
+    const b = quality.presets[order[i]];
+    for (const k of ['pixelRatioMax', 'bloomScale', 'shadowMapSize', 'particleMul', 'decorMul']) {
+      if (b[k] > a[k]) fail(`quality.presets.${order[i]}.${k} が ${order[i - 1]} より大きい`);
+    }
+    if (b.smaa && !a.smaa) fail(`quality.presets.${order[i]}.smaa が ${order[i - 1]} より重い`);
+  }
+}
+
 if (failed) process.exit(1);
-console.log('OK  data/balance.json');
+console.log('OK  data/balance.json, data/quality.json');

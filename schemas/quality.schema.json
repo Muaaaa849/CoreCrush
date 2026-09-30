@@ -1,0 +1,50 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CORE-CRUSH 画質段階（Q-31 回答・GDD 12.3）",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["defaultTouch", "defaultDesktop", "presets", "auto"],
+  "definitions": {
+    "tier": { "enum": ["high", "mid", "low"] },
+    "mul": { "type": "number", "minimum": 0, "maximum": 1 },
+    "preset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["pixelRatioMax", "bloomScale", "shadowMapSize", "smaa", "particleMul", "decorMul"],
+      "properties": {
+        "pixelRatioMax": { "description": "描画解像度の上限（端末の倍率とこの小さい方）", "type": "number", "exclusiveMinimum": 0, "maximum": 3 },
+        "bloomScale": { "description": "ブルームの解像度倍率。0 はブルームなし（emissive のみ）", "$ref": "#/definitions/mul" },
+        "shadowMapSize": { "description": "主光源の影マップの一辺。0 は影なし（丸影）", "enum": [0, 512, 1024, 2048, 4096] },
+        "smaa": { "type": "boolean" },
+        "particleMul": { "description": "パーティクル数の倍率", "$ref": "#/definitions/mul" },
+        "decorMul": { "description": "観客・装飾の量の倍率", "$ref": "#/definitions/mul" }
+      }
+    }
+  },
+  "properties": {
+    "defaultTouch": { "$ref": "#/definitions/tier" },
+    "defaultDesktop": { "$ref": "#/definitions/tier" },
+    "presets": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["high", "mid", "low"],
+      "properties": {
+        "high": { "$ref": "#/definitions/preset" },
+        "mid": { "$ref": "#/definitions/preset" },
+        "low": { "$ref": "#/definitions/preset" }
+      }
+    },
+    "auto": {
+      "description": "画質「自動」の描画解像度の段階的低下",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["overFrameMs", "windowF", "dropOverPct", "scaleSteps"],
+      "properties": {
+        "overFrameMs": { "description": "遅いフレームとみなすフレーム間隔", "type": "number", "exclusiveMinimum": 0 },
+        "windowF": { "description": "判定する描画フレーム数（sim の tick ではない）", "type": "integer", "minimum": 1 },
+        "dropOverPct": { "description": "窓の中で遅いフレームがこの割合（%）以上なら 1 段下げる", "type": "number", "exclusiveMinimum": 0, "maximum": 100 },
+        "scaleSteps": { "description": "描画解像度の倍率の段階。先頭 1、降順、下限 0.75（Q-31）", "type": "array", "minItems": 1, "items": { "type": "number", "minimum": 0.75, "maximum": 1 } }
+      }
+    }
+  }
+}
