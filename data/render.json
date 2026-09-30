@@ -4,5 +4,125 @@
     "strength": 1.0,
     "radius": 0.4,
     "threshold": 1.0
+  },
+  "stage": {
+    "background": "#05060b",
+    "fog": {
+      "color": "#07080f",
+      "nearM": 48,
+      "farM": 110,
+      "groundHeightM": 1.5,
+      "groundDensity": 0.35
+    },
+    "hemi": {
+      "sky": "#2c3358",
+      "ground": "#120812",
+      "intensity": 0.35
+    },
+    "sun": {
+      "color": "#c9d3ff",
+      "intensity": 0.9,
+      "posM": [
+        -8,
+        24,
+        6
+      ]
+    },
+    "areaLights": [
+      {
+        "color": "#ff2bd6",
+        "intensity": 1.6,
+        "widthM": 30,
+        "heightM": 1.2,
+        "posM": [
+          -13,
+          5,
+          0
+        ],
+        "lookAtM": [
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "color": "#35f2ff",
+        "intensity": 1.6,
+        "widthM": 30,
+        "heightM": 1.2,
+        "posM": [
+          13,
+          5,
+          0
+        ],
+        "lookAtM": [
+          0,
+          0,
+          0
+        ]
+      }
+    ],
+    "env": {
+      "intensity": 0.25,
+      "panelHdr": 0.9
+    },
+    "floor": {
+      "color": "#0b0d14",
+      "puddleColor": "#06070b",
+      "roughnessMin": 0.14,
+      "roughnessMax": 0.65,
+      "metalness": 0.2,
+      "noiseScale": 0.3,
+      "puddleCoverage": 0.35
+    },
+    "lines": {
+      "widthM": 0.08,
+      "hdr": 1.6
+    },
+    "cage": {
+      "color": "#7a8499",
+      "heightM": 6,
+      "cellM": 0.18,
+      "wireFrac": 0.12,
+      "opacity": 0.4,
+      "marginM": 0.3,
+      "postColor": "#1a1d26",
+      "postSpacingM": 4
+    },
+    "opponentRim": {
+      "hdr": 0.6,
+      "power": 3
+    },
+    "crowd": {
+      "count": 160,
+      "color": "#10121a",
+      "rowsM": [
+        4,
+        7,
+        10
+      ],
+      "heightM": [
+        1.6,
+        2.2
+      ]
+    },
+    "skyline": {
+      "count": 90,
+      "color": "#0c0e17",
+      "windowHdr": 0.3,
+      "radiusM": [
+        95,
+        170
+      ],
+      "heightM": [
+        15,
+        70
+      ]
+    },
+    "signs": {
+      "count": 24,
+      "hdr": 0.8,
+      "saturation": 0.55
+    }
   }
 }

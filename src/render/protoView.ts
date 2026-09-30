@@ -2,8 +2,10 @@
 import * as THREE from 'three/webgpu';
 import type { Balance } from '../sim/balance';
 import type { Player, World } from '../sim/types';
+import { clamp, color, dot, float, materialEmissive, normalView, positionViewDirection, uniform } from 'three/tsl';
 import { PostPipeline, RENDER_LOOK, type PostDebugView } from './postPipeline';
 import type { QualityPreset } from './quality';
+import { Stage } from './stage';
 
 export type FaceStage = 'smile' | 'nervous' | 'angry' | 'blink' | 'crack';
 
@@ -24,7 +26,7 @@ const FACE_COLOR: Record<FaceStage, number> = {
   crack: 0xffffff,
 };
 
-const PLAYER_COLOR = [0x35f2ff, 0xff2bd6];
+const PLAYER_COLOR = [0x35f2ff, 0xff2bd6] as const;
 // FPS で手に持った球の表示位置（カメラ基準）と、投げた直後に実位置へ寄せる区間
 const HELD_FORWARD_M = 0.75;
 const HELD_RIGHT_M = 0.28;
@@ -48,7 +50,11 @@ export class ProtoView {
   readonly scene = new THREE.Scene();
   readonly camera = new THREE.PerspectiveCamera(75, 16 / 9, 0.05, 200);
   private players: THREE.Mesh[] = [];
-  private playerMats: THREE.MeshStandardMaterial[] = [];
+  private playerMats: THREE.MeshStandardNodeMaterial[] = [];
+  private playerRims: { value: number }[] = [];
+  private playerBlobs: THREE.Mesh[] = [];
+  private rimHdr = 0;
+  private readonly stage: Stage;
   private ball: THREE.Mesh;
   private ballMat: THREE.MeshStandardMaterial;
   private ballLight: THREE.PointLight;
@@ -64,33 +70,10 @@ export class ProtoView {
     renderer.toneMappingExposure = RENDER_LOOK.toneMappingExposure;
     this.post = new PostPipeline(renderer, this.scene, this.camera, debugView);
     this.post.configure(quality);
-    this.scene.background = new THREE.Color(0x07080d);
-    this.scene.add(new THREE.HemisphereLight(0x8899cc, 0x221122, 0.9));
-    const sun = new THREE.DirectionalLight(0xffffff, 1.0);
-    sun.position.set(-6, 14, 4);
-    this.scene.add(sun);
+    this.stage = new Stage(this.scene, b, RENDER_LOOK.stage, PLAYER_COLOR);
 
+    // プラズマ・フェンス（仮。手順4 で TSL のシェーダーにする）
     const W = b.court.widthM;
-    const D = b.court.depthM;
-    // 霧はコート全長（2D）より奥から効かせる（相手や奥の壁をかすませない）
-    this.scene.fog = new THREE.Fog(0x07080d, D * 2, D * 5);
-    const floor = new THREE.Mesh(new THREE.PlaneGeometry(W, D * 2), new THREE.MeshStandardMaterial({ color: 0x12141c, roughness: 0.35, metalness: 0.4 }));
-    floor.rotation.x = -Math.PI / 2;
-    this.scene.add(floor);
-    const grid = new THREE.GridHelper(D * 2, D * 2, 0x2a3350, 0x1a2032);
-    grid.scale.set(W / (D * 2), 1, 1);
-    grid.position.y = 0.002;
-    this.scene.add(grid);
-
-    // コートの縁（透明な壁の位置）
-    const edge = new THREE.LineSegments(
-      new THREE.EdgesGeometry(new THREE.BoxGeometry(W, b.court.ceilingM, D * 2)),
-      new THREE.LineBasicMaterial({ color: 0x3a4466 }),
-    );
-    edge.position.y = b.court.ceilingM / 2;
-    this.scene.add(edge);
-
-    // プラズマ・フェンス
     const fence = new THREE.Mesh(
       new THREE.PlaneGeometry(W, 3),
       new THREE.MeshStandardMaterial({ color: 0x35f2ff, emissive: 0x35f2ff, emissiveIntensity: 0.25, transparent: true, opacity: 0.07, side: THREE.DoubleSide, depthWrite: false }),
@@ -98,23 +81,19 @@ export class ProtoView {
     fence.position.set(0, 1.5, 0);
     this.scene.add(fence);
 
-    // 自陣の色分け
-    for (const side of [0, 1] as const) {
-      const band = new THREE.Mesh(
-        new THREE.PlaneGeometry(W, 0.08),
-        new THREE.MeshBasicMaterial({ color: PLAYER_COLOR[side] }),
-      );
-      band.rotation.x = -Math.PI / 2;
-      band.position.set(0, 0.004, side === 0 ? -D + 0.04 : D - 0.04);
-      this.scene.add(band);
-    }
-
     const r = b.player.bodyRadiusM;
     const h = b.player.bodyHeightM;
+    const rimLook = RENDER_LOOK.stage.opponentRim;
     for (const side of [0, 1] as const) {
-      const mat = new THREE.MeshStandardMaterial({ color: PLAYER_COLOR[side], emissive: PLAYER_COLOR[side], emissiveIntensity: 0.15, roughness: 0.5, transparent: true });
+      const mat = new THREE.MeshStandardNodeMaterial({ color: PLAYER_COLOR[side], emissive: PLAYER_COLOR[side], emissiveIntensity: 0.15, roughness: 0.5, transparent: true });
+      // 相手にリムライト（背景から浮かせる。GDD 12.2 の可読性）。自分は 0
+      const rim = uniform(0);
+      const fres = float(1).sub(clamp(dot(normalView, positionViewDirection), 0, 1)).pow(rimLook.power);
+      mat.emissiveNode = materialEmissive.add(color(PLAYER_COLOR[side]).mul(fres).mul(rim));
+      this.playerRims.push(rim);
       const m = new THREE.Mesh(new THREE.BoxGeometry(r * 2, h, r * 2), mat);
       m.position.y = h / 2;
+      m.castShadow = true;
       // 向きを示す「顔」
       const nose = new THREE.Mesh(new THREE.BoxGeometry(r * 1.2, 0.18, 0.1), new THREE.MeshBasicMaterial({ color: 0xffffff }));
       nose.position.set(0, h * 0.3, r + 0.05);
@@ -122,10 +101,18 @@ export class ProtoView {
       this.scene.add(m);
       this.players.push(m);
       this.playerMats.push(mat);
+      // 影なし（低画質）のときの丸影
+      const blob = new THREE.Mesh(new THREE.CircleGeometry(r * 1.4, 20), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.45, depthWrite: false }));
+      blob.rotation.x = -Math.PI / 2;
+      blob.position.y = 0.005;
+      this.scene.add(blob);
+      this.playerBlobs.push(blob);
     }
+    this.rimHdr = rimLook.hdr;
 
     this.ballMat = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: FACE_COLOR.smile, emissiveIntensity: 3 });
     this.ball = new THREE.Mesh(new THREE.SphereGeometry(b.ball.radiusM, 32, 16), this.ballMat);
+    this.ball.castShadow = true;
     this.scene.add(this.ball);
     this.ballLight = new THREE.PointLight(FACE_COLOR.smile, 8, 8);
     this.ball.add(this.ballLight);
@@ -146,6 +133,8 @@ export class ProtoView {
         await renderer.init();
         renderer.setPixelRatio(Math.min(devicePixelRatio, quality.pixelRatioMax));
         const v = new ProtoView(renderer, b, quality, debugView);
+        v.stage.buildEnvironment(renderer, PLAYER_COLOR);
+        v.setQuality(quality);
         v.post.render();
         v.backend = (renderer.backend as unknown as { isWebGPUBackend?: boolean }).isWebGPUBackend ? 'WebGPU' : 'WebGL2';
         return v;
@@ -168,6 +157,8 @@ export class ProtoView {
   /** 画質段階のポスト構成（ブルーム・SMAA）を反映する */
   setQuality(preset: QualityPreset): void {
     this.post.configure(preset);
+    this.stage.applyQuality(this.renderer, preset);
+    for (const blob of this.playerBlobs) blob.visible = preset.shadowMapSize === 0;
   }
 
   /** 描画解像度の倍率（CSS px あたりの描画 px）。変えたら resize を呼ぶ */
@@ -230,7 +221,7 @@ export class ProtoView {
   private tint(p: Player, i: number, timeMs: number): void {
     const mat = this.playerMats[i]!;
     const base = PLAYER_COLOR[i]!;
-    let emissive = base;
+    let emissive: number = base;
     let intensity = 0.15;
     switch (p.action) {
       case 'catch': emissive = 0xffffff; intensity = 0.9; break;
@@ -257,6 +248,8 @@ export class ProtoView {
       const pp = pl.side !== me && foeDisplay ? foeDisplay : this.playerPos(pl.side, alpha);
       m.position.x = pp.x;
       m.position.z = pp.z;
+      this.playerBlobs[pl.side]!.position.set(pp.x, 0.005, pp.z);
+      this.playerRims[pl.side]!.value = pl.side === me ? 0 : this.rimHdr;
       // 自分は FPS のとき隠す。相手は常に自分の方を向く
       m.visible = !(pl.side === me && cam.blend > 0.5);
       // TPS の自分は半透明にして前が見えるようにする

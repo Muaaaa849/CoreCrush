@@ -8,10 +8,12 @@ import { bloom } from 'three/addons/tsl/display/BloomNode.js';
 import { smaa } from 'three/addons/tsl/display/SMAANode.js';
 import renderJson from '../../data/render.json';
 import type { QualityPreset } from './quality';
+import type { StageLook } from './stage';
 
 export interface RenderLook {
   toneMappingExposure: number;
   bloom: { strength: number; radius: number; threshold: number };
+  stage: StageLook;
 }
 
 export const RENDER_LOOK: RenderLook = renderJson as RenderLook;

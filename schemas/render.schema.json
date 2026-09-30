@@ -3,19 +3,475 @@
   "title": "CORE-CRUSH 画づくり（GDD 12.2）",
   "type": "object",
   "additionalProperties": false,
-  "required": ["toneMappingExposure", "bloom"],
+  "required": [
+    "toneMappingExposure",
+    "bloom",
+    "stage"
+  ],
   "properties": {
-    "toneMappingExposure": { "description": "ACES Filmic の露出（GDD 12.2: 0.9 前後）", "type": "number", "exclusiveMinimum": 0 },
+    "toneMappingExposure": {
+      "description": "ACES Filmic の露出（GDD 12.2: 0.9 前後）",
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
     "bloom": {
       "description": "トーンマップ前の HDR 色に掛けるブルーム（BloomNode）。しきい値を超えるのは emissive を強くした物だけにする（ADR 0005）",
       "type": "object",
       "additionalProperties": false,
-      "required": ["strength", "radius", "threshold"],
+      "required": [
+        "strength",
+        "radius",
+        "threshold"
+      ],
       "properties": {
-        "strength": { "type": "number", "minimum": 0 },
-        "radius": { "type": "number", "minimum": 0, "maximum": 1 },
-        "threshold": { "description": "HDR 色の輝度がこれ未満は光らない。照明を受けた普通の面は 1 未満に収める", "type": "number", "minimum": 0 }
+        "strength": {
+          "type": "number",
+          "minimum": 0
+        },
+        "radius": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "threshold": {
+          "description": "HDR 色の輝度がこれ未満は光らない。照明を受けた普通の面は 1 未満に収める",
+          "type": "number",
+          "minimum": 0
+        }
       }
+    },
+    "stage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "background",
+        "fog",
+        "hemi",
+        "sun",
+        "areaLights",
+        "env",
+        "floor",
+        "lines",
+        "cage",
+        "opponentRim",
+        "crowd",
+        "skyline",
+        "signs"
+      ],
+      "properties": {
+        "background": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        },
+        "fog": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "color",
+            "nearM",
+            "farM",
+            "groundHeightM",
+            "groundDensity"
+          ],
+          "properties": {
+            "color": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}$"
+            },
+            "nearM": {
+              "type": "number",
+              "minimum": 0
+            },
+            "farM": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "groundHeightM": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "groundDensity": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          },
+          "description": "距離の霧＋コートの外の地面に溜まる霧"
+        },
+        "hemi": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "sky",
+            "ground",
+            "intensity"
+          ],
+          "properties": {
+            "sky": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}$"
+            },
+            "ground": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}$"
+            },
+            "intensity": {
+              "type": "number",
+              "minimum": 0
+            }
+          }
+        },
+        "sun": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "color",
+            "intensity",
+            "posM"
+          ],
+          "properties": {
+            "color": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}$"
+            },
+            "intensity": {
+              "type": "number",
+              "minimum": 0
+            },
+            "posM": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              },
+              "minItems": 3,
+              "maxItems": 3
+            }
+          },
+          "description": "影を落とす主光源（1 灯だけ）"
+        },
+        "areaLights": {
+          "type": "array",
+          "maxItems": 4,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "color",
+              "intensity",
+              "widthM",
+              "heightM",
+              "posM",
+              "lookAtM"
+            ],
+            "properties": {
+              "color": {
+                "type": "string",
+                "pattern": "^#[0-9a-fA-F]{6}$"
+              },
+              "intensity": {
+                "type": "number",
+                "minimum": 0
+              },
+              "widthM": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              },
+              "heightM": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              },
+              "posM": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "minItems": 3,
+                "maxItems": 3
+              },
+              "lookAtM": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "minItems": 3,
+                "maxItems": 3
+              }
+            }
+          }
+        },
+        "env": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "intensity",
+            "panelHdr"
+          ],
+          "properties": {
+            "intensity": {
+              "type": "number",
+              "minimum": 0
+            },
+            "panelHdr": {
+              "type": "number",
+              "minimum": 0
+            }
+          },
+          "description": "床に映すネオンの環境マップ"
+        },
+        "floor": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "color",
+            "puddleColor",
+            "roughnessMin",
+            "roughnessMax",
+            "metalness",
+            "noiseScale",
+            "puddleCoverage"
+          ],
+          "properties": {
+            "color": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}$"
+            },
+            "puddleColor": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}$"
+            },
+            "roughnessMin": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "roughnessMax": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "metalness": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "noiseScale": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "puddleCoverage": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          }
+        },
+        "lines": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "widthM",
+            "hdr"
+          ],
+          "properties": {
+            "widthM": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "hdr": {
+              "type": "number",
+              "minimum": 0,
+              "description": "床のネオンライン。1 以上で光る。コア（3.0）より明るくしない"
+            }
+          }
+        },
+        "cage": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "color",
+            "heightM",
+            "cellM",
+            "wireFrac",
+            "opacity",
+            "marginM",
+            "postColor",
+            "postSpacingM"
+          ],
+          "properties": {
+            "color": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}$"
+            },
+            "heightM": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "cellM": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "wireFrac": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "opacity": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "marginM": {
+              "type": "number",
+              "minimum": 0
+            },
+            "postColor": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}$"
+            },
+            "postSpacingM": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            }
+          }
+        },
+        "opponentRim": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "hdr",
+            "power"
+          ],
+          "properties": {
+            "hdr": {
+              "type": "number",
+              "minimum": 0,
+              "exclusiveMaximum": 1,
+              "description": "光らせない物: ブルームのしきい値（1.0）未満"
+            },
+            "power": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            }
+          },
+          "description": "相手のリムライト"
+        },
+        "crowd": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "count",
+            "color",
+            "rowsM",
+            "heightM"
+          ],
+          "properties": {
+            "count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "color": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}$"
+            },
+            "rowsM": {
+              "type": "array",
+              "items": {
+                "type": "number",
+                "minimum": 0
+              },
+              "minItems": 1
+            },
+            "heightM": {
+              "type": "array",
+              "items": {
+                "type": "number",
+                "minimum": 0
+              },
+              "minItems": 2,
+              "maxItems": 2
+            }
+          }
+        },
+        "skyline": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "count",
+            "color",
+            "windowHdr",
+            "radiusM",
+            "heightM"
+          ],
+          "properties": {
+            "count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "color": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}$"
+            },
+            "windowHdr": {
+              "type": "number",
+              "minimum": 0,
+              "exclusiveMaximum": 1,
+              "description": "光らせない物: ブルームのしきい値（1.0）未満"
+            },
+            "radiusM": {
+              "type": "array",
+              "items": {
+                "type": "number",
+                "minimum": 0
+              },
+              "minItems": 2,
+              "maxItems": 2
+            },
+            "heightM": {
+              "type": "array",
+              "items": {
+                "type": "number",
+                "minimum": 0
+              },
+              "minItems": 2,
+              "maxItems": 2
+            }
+          }
+        },
+        "signs": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "count",
+            "hdr",
+            "saturation"
+          ],
+          "properties": {
+            "count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "hdr": {
+              "type": "number",
+              "minimum": 0,
+              "exclusiveMaximum": 1,
+              "description": "光らせない物: ブルームのしきい値（1.0）未満"
+            },
+            "saturation": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          },
+          "description": "遠景の看板（彩度を落とす）"
+        }
+      },
+      "description": "ステージの見た目（GDD 1, 12.2）"
+    }
+  },
+  "definitions": {
+    "hex": {
+      "type": "string",
+      "pattern": "^#[0-9a-fA-F]{6}$"
     }
   }
 }
