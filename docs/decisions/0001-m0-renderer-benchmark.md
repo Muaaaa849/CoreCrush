@@ -62,6 +62,20 @@ GDD は WebGPURenderer＋TSL＋RenderPipeline を推奨し、M0 で WebGL との
 - Chrome 152 系では WebGPU が正常に動いた。クラウドの Chrome 141 で出た `swizzle` エラーはブラウザの版の問題と見られる。
 - この端末は GDD の基準（ミドルノート PC）より明らかに強い。**予算の最終判断はノート PC の結果が必要。**
 
+## 実機結果（2026-09-30・スマホ）
+端末: Xiaomi 11T（21081111RG、Android 12、Mali-G77 MC9 / WebGPU: arm / valhall）/ Claude Android アプリの WebView（Chrome 153）。
+基準シーンは PC と同じ 1920×1080 固定（スマホの画面より画素が多い）。
+
+| 構成 | 中央値 | p95 | 最大 | 本体DC | 総DC |
+|---|---|---|---|---|---|
+| WebGPURenderer / WebGPU | 31.4ms | 43.7ms | 56.1ms | 83 | 191 |
+| WebGPURenderer / WebGL2 強制 | 55.1ms | 77.7ms | 109.3ms | 83 | 191 |
+| WebGLRenderer | 45.0ms | 56.3ms | 65.5ms | 83 | 191 |
+
+- スマホでは **WebGPU が最も速い**（WebGL2 強制より 43%、WebGLRenderer より 30% 短い）。WebGPURenderer 採用の判断を補強する。
+- ただし M3 目標相当の重さを 1080p で描くと約 32fps。スマホで 60fps には画質段階（描画解像度・ブルーム・影・三角形数）が必要（Q-31）。
+- 計測は各フレームで GPU 完了を待つため、実際のゲームループ（待たずに重ねる）よりやや悲観的な値。
+
 ## 決定（暫定）
 - **WebGPURenderer（TSL）を採用**。GDD の推奨どおり。
 - 初期化・初回描画で失敗したら `forceWebGL` で作り直すフォールバックを入れる（古い Chrome 対策）。
