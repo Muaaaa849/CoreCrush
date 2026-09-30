@@ -159,6 +159,34 @@ export class ProtoView {
     return v;
   }
 
+  /** 描画解像度の倍率（CSS px あたりの描画 px）。変えたら resize を呼ぶ */
+  setPixelRatio(r: number): void {
+    this.renderer.setPixelRatio(r);
+  }
+
+  /** 直前のフレームの描画情報（影・ポストの全画面パスを含む総数） */
+  drawInfo(): { drawCalls: number; triangles: number } {
+    const r = this.renderer.info.render;
+    return { drawCalls: r.drawCalls, triangles: r.triangles };
+  }
+
+  /** GPU の名前（取れない端末もある） */
+  async gpuName(): Promise<string> {
+    try {
+      const be = this.renderer.backend as unknown as { isWebGPUBackend?: boolean; device?: { adapterInfo?: GPUAdapterInfo }; gl?: WebGL2RenderingContext };
+      if (be.isWebGPUBackend) {
+        const info = be.device?.adapterInfo ?? (await navigator.gpu?.requestAdapter())?.info;
+        return info ? [info.vendor, info.architecture, info.device, info.description].filter(Boolean).join(' / ') || '非公開' : '不明';
+      }
+      const gl = be.gl;
+      if (!gl) return '不明';
+      const ext = gl.getExtension('WEBGL_debug_renderer_info');
+      return String(ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER));
+    } catch (e) {
+      return `取得できず: ${String(e)}`;
+    }
+  }
+
   resize(w: number, h: number): void {
     this.renderer.setSize(w, h, false);
     this.camera.aspect = w / h;

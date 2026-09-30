@@ -14,6 +14,7 @@ import { TouchLayoutEditor } from '../ui/touchLayoutEditor';
 import { throwTypeFromInput } from '../sim/throwType';
 import { CameraRig, DEFAULT_CAMERA, type CameraSettings } from '../render/cameraRig';
 import { ProtoView, faceStage } from '../render/protoView';
+import { PerfStats, type PerfSummary } from '../render/perfStats';
 
 const TICK_MS = 1000 / 60;
 /** オンラインで相手から何も届かないとき、警告を出すまでの秒数（表示のみ） */
@@ -89,7 +90,14 @@ async function main(): Promise<void> {
     return;
   }
   const resize = () => view.resize(stage.clientWidth, stage.clientHeight);
-  resize();
+  // 描画解像度（'auto' = 端末の倍率、最大 2）。画質設定の最初のつまみ（M3 で画質段階に広げる）
+  let pixelRatioSetting = store<string>('cc.pixelRatio', 'auto');
+  const applyPixelRatio = () => {
+    const r = pixelRatioSetting === 'auto' ? Math.min(devicePixelRatio, 2) : Number(pixelRatioSetting) || 1;
+    view.setPixelRatio(r);
+    resize();
+  };
+  applyPixelRatio();
   window.addEventListener('resize', resize);
 
   const input = new KeyboardMouse(view.renderer.domElement);
@@ -159,6 +167,116 @@ async function main(): Promise<void> {
     save('cc.bot', botLevel);
     bot.profile = BOTS[botLevel] ?? BOTS.normal!;
   });
+  const prSel = $<HTMLSelectElement>('pixelRatio');
+  prSel.value = pixelRatioSetting;
+  prSel.addEventListener('change', () => {
+    pixelRatioSetting = prSel.value;
+    save('cc.pixelRatio', pixelRatioSetting);
+    applyPixelRatio();
+  });
+
+  // --- 性能表示・計測 ---
+  const perf = new PerfStats(600);
+  let showPerf = store<boolean>('cc.showPerf', false);
+  const perfCb = $<HTMLInputElement>('showPerf');
+  perfCb.checked = showPerf;
+  $('perf').hidden = !showPerf;
+  perfCb.addEventListener('change', () => {
+    showPerf = perfCb.checked;
+    save('cc.showPerf', showPerf);
+    $('perf').hidden = !showPerf;
+  });
+  const PERF_WARMUP_MS = 2000;
+  const PERF_MEASURE_MS = 30000;
+  type PerfResult = PerfSummary & Record<string, unknown>;
+  let perfHistory = store<PerfResult[]>('cc.perfResults', []);
+  const perfOut = $<HTMLTextAreaElement>('perfOut');
+  const showPerfResults = () => {
+    const last = perfHistory[perfHistory.length - 1];
+    $('perfStatus').textContent = last
+      ? `前回: ${last.fps} fps・p95 ${last.frameMsP95}ms・18ms 超 ${last.over18Pct}%（解像度 ${String(last.pixelRatio)} 倍・${String(last.canvas)}・${String(last.backend)}）　計 ${perfHistory.length} 回`
+      : 'まだ計測していません';
+    perfOut.value = perfHistory.length ? JSON.stringify(perfHistory, null, 1) : '';
+  };
+  showPerfResults();
+  /** 計測中: 遊んだ時間（一時停止中は数えない）と集計 */
+  let measuring: { playedMs: number; stats: PerfStats } | null = null;
+  let gpuName = '取得中';
+  void view.gpuName().then((n) => (gpuName = n));
+  const finishMeasure = (m: { stats: PerfStats }) => {
+    const nav = navigator as Navigator & { deviceMemory?: number };
+    const c = view.renderer.domElement;
+    const result: PerfResult = {
+      ...m.stats.summary(),
+      ...view.drawInfo(),
+      date: new Date().toISOString(),
+      ua: navigator.userAgent,
+      touch: touchMode,
+      online: online !== null,
+      backend: view.backend,
+      gpu: gpuName,
+      devicePixelRatio: devicePixelRatio,
+      pixelRatio: view.renderer.getPixelRatio(),
+      canvas: `${c.width}x${c.height}`,
+      cssViewport: `${innerWidth}x${innerHeight}`,
+      cores: navigator.hardwareConcurrency,
+      memoryGB: nav.deviceMemory ?? null,
+    };
+    perfHistory = [...perfHistory, result].slice(-10);
+    save('cc.perfResults', perfHistory);
+    showPerfResults();
+    toast(`計測完了 ${result.fps} fps`, '#ffe066');
+  };
+  $('perfRun').addEventListener('click', () => {
+    measuring = { playedMs: 0, stats: new PerfStats(8000) };
+    $('perfStatus').textContent = '計測中… 30 秒遊んでください';
+    void start();
+  });
+  $('perfCopy').addEventListener('click', () => {
+    const text = perfOut.value;
+    if (!text) return;
+    const done = () => ($('perfStatus').textContent = 'コピーしました。チャットに貼り付けてください');
+    // クリップボード API が使えない表示では、選択して古い方法でコピーする
+    const fallback = () => {
+      perfOut.select();
+      document.execCommand('copy');
+      done();
+    };
+    if (navigator.clipboard) navigator.clipboard.writeText(text).then(done, fallback);
+    else fallback();
+  });
+  $('perfClear').addEventListener('click', () => {
+    perfHistory = [];
+    save('cc.perfResults', perfHistory);
+    showPerfResults();
+  });
+  const updatePerf = (frameMs: number, renderMs: number) => {
+    perf.push(frameMs, renderMs);
+    if (measuring) {
+      measuring.playedMs += frameMs;
+      if (measuring.playedMs > PERF_WARMUP_MS) measuring.stats.push(frameMs, renderMs);
+      if (measuring.playedMs >= PERF_WARMUP_MS + PERF_MEASURE_MS) {
+        finishMeasure(measuring);
+        measuring = null;
+      }
+    }
+  };
+  let perfTextAt = 0;
+  const drawPerf = (now: number) => {
+    if (!showPerf && !measuring) return;
+    if (now - perfTextAt < 250) return;
+    perfTextAt = now;
+    const fps = perf.recentFps();
+    const p95 = perf.recentP95();
+    const el = $('perf');
+    el.hidden = false;
+    const c = view.renderer.domElement;
+    const left = measuring ? `　計測 ${Math.max(0, Math.ceil((PERF_WARMUP_MS + PERF_MEASURE_MS - measuring.playedMs) / 1000))}s` : '';
+    el.textContent = `${fps.toFixed(0)} fps  p95 ${p95.toFixed(1)}ms  ${view.backend} ${c.width}×${c.height}${left}`;
+    el.classList.toggle('warn', p95 > 18);
+    el.classList.toggle('bad', p95 > 33);
+  };
+
   const start = async () => {
     if (touchMode) {
       // 横持ちの全画面にする（対応していない端末・埋め込み表示では何もしない）
@@ -419,7 +537,8 @@ async function main(): Promise<void> {
   let last = performance.now();
   let acc = 0;
   const frame = (now: number) => {
-    const dt = Math.min(100, now - last);
+    const rawDt = now - last;
+    const dt = Math.min(100, rawDt);
     last = now;
     if (playing()) {
       const [dx, dy] = input.takeMouse();
@@ -475,7 +594,13 @@ async function main(): Promise<void> {
       if (over) rematchBtn.textContent = online ? '再戦' : 'もう一度';
     }
     const foeDisplay = onlinePeer && onlinePeer.remoteDisplayPos(alpha, foePos) ? foePos : null;
+    const r0 = performance.now();
     view.render(world, alpha, rig, ME, now, foeDisplay);
+    const renderMs = performance.now() - r0;
+    // 遊んでいる間だけ数える（一時停止中は描画が同じでも比べる意味がないため）
+    if (playing()) updatePerf(rawDt, renderMs);
+    else if (!showPerf) $('perf').hidden = true;
+    drawPerf(now);
     updateHud();
     requestAnimationFrame(frame);
   };

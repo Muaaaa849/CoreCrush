@@ -79,6 +79,11 @@ button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px s
 .online input[type=url], .online input[type=text] { min-width: 0; width: 100%; box-sizing: border-box; background: rgba(0,0,0,0.35); color: inherit; border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; padding: 6px 8px; font: inherit; }
 .onlineRow { display: grid; grid-template-columns: auto 1fr auto; gap: 6px; align-items: center; }
 .online button { padding: 6px 10px; }
+.perfActions { display: flex; flex-wrap: wrap; gap: 6px; }
+.settings label.check { grid-template-columns: auto 1fr; }
+#perfOut { width: 100%; box-sizing: border-box; font: 11px/1.4 var(--font-mono); color: var(--fg); background: rgba(0,0,0,.35); border: 1px solid var(--line); border-radius: 6px; padding: 6px; resize: vertical; }
+.perf { position: absolute; top: calc(64px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%); font: 600 12px/1.3 var(--font-mono); color: var(--fg); background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 3px 8px; white-space: pre; text-align: center; font-variant-numeric: tabular-nums; }
+.perf.warn { color: var(--warn); } .perf.bad { color: var(--bad); }
 
 /* --- タッチ操作（スマホ横持ち）。部品の位置・大きさは JS が layout から置く --- */
 :root:not(.touchMode) .touchOnly { display: none; }
@@ -157,6 +162,7 @@ button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px s
     <div class="row"><span id="hpFoeText">100</span><span>ゲージ <span id="meterFoeText">0.00</span></span></div>
   </div>
   <div class="frames" id="frames" hidden></div>
+  <div class="perf" id="perf" hidden></div>
   <div class="toasts" id="toasts"></div>
   <div class="banner" id="banner"></div>
 </div>
@@ -202,7 +208,23 @@ button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px s
           <option value="hard">つよい（ほぼ跳ね返す）</option>
           <option value="dummy">的（何もしない）</option>
         </select><span></span></label>
+        <label for="pixelRatio">描画解像度 <select id="pixelRatio">
+          <option value="auto">端末に合わせる（最大 2 倍）</option>
+          <option value="2">2 倍</option>
+          <option value="1.5">1.5 倍</option>
+          <option value="1">1 倍</option>
+          <option value="0.75">0.75 倍</option>
+          <option value="0.5">0.5 倍</option>
+        </select><span></span></label>
+        <label class="check" for="showPerf"><input id="showPerf" type="checkbox"> 性能を表示（FPS・フレーム時間）</label>
         <div class="touchOnly"><button id="touchLayout" type="button" class="ghost">ボタン配置・大きさ・視点感度</button></div>
+        <fieldset class="online" id="perfBox">
+          <legend>性能計測</legend>
+          <div class="status">試合を再開して 30 秒ふつうに遊ぶと、結果がここに出ます（最初の 2 秒は数えません）。描画解像度を変えて何回か測ると比べられます。</div>
+          <div class="perfActions"><button id="perfRun" type="button" class="ghost">30 秒計測する</button><button id="perfCopy" type="button" class="ghost">結果をコピー</button><button id="perfClear" type="button" class="ghost">履歴を消す</button></div>
+          <div class="status" id="perfStatus">まだ計測していません</div>
+          <textarea id="perfOut" readonly rows="4" spellcheck="false"></textarea>
+        </fieldset>
         <div class="status" id="status">起動中…</div>
         <fieldset class="online" id="onlineBox">
           <legend>オンライン対戦</legend>
