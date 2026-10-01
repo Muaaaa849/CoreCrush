@@ -7,20 +7,20 @@
   },
   "post": {
     "vignette": {
-      "amount": 0.3,
+      "amount": 0.22,
       "radius": 0.85,
       "softness": 0.9
     },
     "edgeBlur": {
       "startR": 0.75,
-      "maxPx": 3.5
+      "maxPx": 2.0
     },
     "chromaticAberration": {
       "startR": 0.6,
       "amountPx": 2.5
     },
     "grain": {
-      "amount": 0.018,
+      "amount": 0.01,
       "shadowPow": 1.5
     },
     "lensFlare": {
@@ -40,14 +40,14 @@
     },
     "grade": {
       "slope": [
-        1.04,
-        1.0,
-        0.96
+        1.12,
+        1.08,
+        1.04
       ],
       "offset": [
-        0.012,
-        0.014,
-        0.022
+        0.016,
+        0.018,
+        0.026
       ],
       "power": [
         1.0,
@@ -431,7 +431,7 @@
       "foeGlowHdr": 2.4
     },
     "skyline": {
-      "count": 30,
+      "count": 24,
       "seed": 7,
       "radiusM": [
         140,
@@ -444,7 +444,29 @@
       "baseYM": -60,
       "wallColor": "#1c1d26",
       "windowHdr": 0.75,
-      "litChance": 0.24
+      "litChance": 0.24,
+      "streetGlowM": 90,
+      "streetGlowColor": "#3a2414",
+      "signs": {
+        "chance": 0.4,
+        "colors": [
+          "#ffb03a",
+          "#ff4a3a",
+          "#f4f0e0",
+          "#9cff7a",
+          "#ffd84a"
+        ],
+        "hdr": 1.25,
+        "heightM": [
+          8,
+          22
+        ]
+      },
+      "beacons": {
+        "color": "#ff2a1a",
+        "hdr": 1.8,
+        "sizeM": 0.6
+      }
     },
     "floods": {
       "color": "#ffe4c8",
@@ -515,7 +537,11 @@
       "ringInnerM": 0.55,
       "ringOuterM": 0.7,
       "hdr": 0.9,
-      "opacity": 0.85
+      "opacity": 0.85,
+      "haloPx": 26,
+      "haloHdr": 1.6,
+      "foeMarkerPx": 14,
+      "foeMarkerUpM": 0.55
     },
     "beacon": {
       "heightM": 7,

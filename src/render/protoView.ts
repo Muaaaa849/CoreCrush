@@ -2,7 +2,7 @@
 import * as THREE from 'three/webgpu';
 import type { Balance } from '../sim/balance';
 import type { Player, SimEvent, World } from '../sim/types';
-import { clamp, color, dot, float, normalView, positionLocal, positionViewDirection, uniform } from 'three/tsl';
+import { clamp, color, dot, float, normalView, positionLocal, positionViewDirection, select, smoothstep, uniform, uv } from 'three/tsl';
 import { PostPipeline, RENDER_LOOK, type PostDebugView } from './postPipeline';
 import type { QualityPreset } from './quality';
 import { Stage } from './stage';
@@ -68,6 +68,8 @@ export class ProtoView {
   private readonly ballRingMat: THREE.MeshBasicMaterial;
   private readonly foeRings: THREE.Mesh[] = [];
   private readonly charFill: THREE.PointLight;
+  private readonly halo: THREE.Sprite;
+  private readonly foeMarkers: THREE.Sprite[] = [];
   private readonly foeLights: THREE.PointLight[] = [];
   private prev: Snap = { px: [0, 0], pz: [0, 0], bx: 0, by: 0, bz: 0, bMode: '', bThrower: -1, bRally: 0 };
   private cur: Snap = { px: [0, 0], pz: [0, 0], bx: 0, by: 0, bz: 0, bMode: '', bThrower: -1, bRally: 0 };
@@ -171,6 +173,27 @@ export class ProtoView {
     this.beacon = new THREE.Mesh(beaconGeo, this.beaconMat);
     this.beacon.visible = false;
     this.scene.add(this.beacon);
+    // 画面上で一定の大きさのしるし（遠くても読める）: コアの周りの柔らかい光、相手の頭上の下向き三角
+    const haloMat = new THREE.PointsNodeMaterial({ transparent: true, depthWrite: false, depthTest: false, blending: THREE.AdditiveBlending, sizeAttenuation: false });
+    const hd = uv().sub(0.5).length().mul(2);
+    haloMat.colorNode = this.beaconColor.mul(MK.haloHdr);
+    haloMat.opacityNode = smoothstep(1, 0.25, hd).mul(smoothstep(0.0, 0.35, hd)).mul(0.9);
+    haloMat.sizeNode = float(MK.haloPx);
+    this.halo = new THREE.Sprite(haloMat);
+    this.halo.renderOrder = 5;
+    this.scene.add(this.halo);
+    for (const side of [0, 1] as const) {
+      const mk = new THREE.PointsNodeMaterial({ transparent: true, depthWrite: false, sizeAttenuation: false });
+      const q = uv();
+      // 下向きの三角（上辺が広い）
+      const tri = q.y.greaterThan(0.15).and(q.x.sub(0.5).abs().lessThan(q.y.sub(0.15).mul(0.55)));
+      mk.colorNode = color(PLAYER_COLOR[side]).mul(1.4);
+      mk.opacityNode = select(tri, float(0.95), float(0));
+      mk.sizeNode = float(MK.foeMarkerPx);
+      const sp = new THREE.Sprite(mk);
+      this.scene.add(sp);
+      this.foeMarkers.push(sp);
+    }
     // 自分の選手を背中側から照らす弱い補助光（カメラに付く）
     const CF = RENDER_LOOK.stage.charFill;
     this.charFill = new THREE.PointLight(new THREE.Color(CF.color), CF.intensity, CF.rangeM, 2);
@@ -326,6 +349,9 @@ export class ProtoView {
       fl.visible = pl.side !== me;
       fl.position.x = pp.x;
       fl.position.z = pp.z;
+      const fm = this.foeMarkers[pl.side]!;
+      fm.visible = pl.side !== me;
+      fm.position.set(pp.x, b.player.bodyHeightM + RENDER_LOOK.stage.markers.foeMarkerUpM, pp.z);
       if (Math.abs(pp.z) <= this.fenceTouchZ) this.fence.touch(pl.side, pp.x, b.player.bodyHeightM * 0.6);
       this.playerRims[pl.side]!.value = pl.side === me ? 0 : this.rimHdr;
       // 自分は FPS のとき隠す。相手は常に自分の方を向く
@@ -375,6 +401,9 @@ export class ProtoView {
     this.beacon.visible = w.ball.mode === 'loose';
     this.beacon.position.set(this.ball.position.x, 0, this.ball.position.z);
     this.beaconColor.value.copy(this.face.light.color);
+    // 自分が FPS で持っている間は出さない（視界を遮らない）
+    this.halo.visible = !(heldByMe && cam.blend > 0.5);
+    this.halo.position.copy(this.ball.position);
 
     this.camera.position.set(cam.pos.x, cam.pos.y, cam.pos.z);
     this.charFill.position.set(cam.pos.x, cam.pos.y + RENDER_LOOK.stage.charFill.upM, cam.pos.z);

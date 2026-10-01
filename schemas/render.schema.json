@@ -1107,7 +1107,11 @@
             "baseYM",
             "wallColor",
             "windowHdr",
-            "litChance"
+            "litChance",
+            "streetGlowM",
+            "streetGlowColor",
+            "signs",
+            "beacons"
           ],
           "properties": {
             "count": {
@@ -1154,6 +1158,78 @@
               "type": "number",
               "minimum": 0,
               "maximum": 1
+            },
+            "streetGlowM": {
+              "type": "number",
+              "minimum": 0
+            },
+            "streetGlowColor": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}$"
+            },
+            "signs": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "chance",
+                "colors",
+                "hdr",
+                "heightM"
+              ],
+              "properties": {
+                "chance": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                },
+                "colors": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "pattern": "^#[0-9a-fA-F]{6}$"
+                  },
+                  "minItems": 1,
+                  "description": "チーム色（#35f2ff・#ff2bd6）は使わない"
+                },
+                "hdr": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 3
+                },
+                "heightM": {
+                  "type": "array",
+                  "items": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "minItems": 2,
+                  "maxItems": 2
+                }
+              }
+            },
+            "beacons": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "color",
+                "hdr",
+                "sizeM"
+              ],
+              "properties": {
+                "color": {
+                  "type": "string",
+                  "pattern": "^#[0-9a-fA-F]{6}$"
+                },
+                "hdr": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 3
+                },
+                "sizeM": {
+                  "type": "number",
+                  "minimum": 0
+                }
+              }
             }
           }
         },
@@ -1303,7 +1379,11 @@
             "ringInnerM",
             "ringOuterM",
             "hdr",
-            "opacity"
+            "opacity",
+            "haloPx",
+            "haloHdr",
+            "foeMarkerPx",
+            "foeMarkerUpM"
           ],
           "properties": {
             "ringInnerM": {
@@ -1323,6 +1403,25 @@
               "type": "number",
               "minimum": 0,
               "maximum": 1
+            },
+            "haloPx": {
+              "type": "number",
+              "minimum": 0,
+              "description": "コアの周りの光の輪の画面上の大きさ（px。遠くでも小さくならない）"
+            },
+            "haloHdr": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 3
+            },
+            "foeMarkerPx": {
+              "type": "number",
+              "minimum": 0,
+              "description": "相手の頭上の印（下向きの三角）の画面上の大きさ（px）"
+            },
+            "foeMarkerUpM": {
+              "type": "number",
+              "minimum": 0
             }
           }
         },
