@@ -8,7 +8,7 @@ import { loadTexture } from './assets';
 export interface BackdropLook {
   haze: string;
   saturation: number;
-  sky: { texture: string; radiusM: number; horizonDeg: number; bandDeg: number; horizonColor: string; zenithColor: string; repeat: number; hdr: number };
+  sky: { texture: string; radiusM: number; horizonDeg: number; bandDeg: number; horizonColor: string; horizonGlow: string; zenithColor: string; repeat: number; hdr: number };
   layers: { texture: string; radiusM: number; count: number; widthM: number; yM: number; startDeg: number; hdr: number; haze: number }[];
 }
 
@@ -41,7 +41,9 @@ export class Backdrop {
       const t = texture(sky, vec2(az.mul(L.sky.repeat), clamp(v, 0.002, 0.998)));
       const clouds = grade(t.rgb, L.saturation, L.sky.hdr, L.haze, float(0));
       const zenith = mix(color(L.sky.horizonColor), color(L.sky.zenithColor), smoothstep(0.6, 1.6, v));
-      mat.colorNode = mix(clouds, zenith, smoothstep(0.75, 1.05, v)).mul(smoothstep(-0.25, 0.05, v).mul(0.85).add(0.15));
+      // 地平線の街の光害（ビルのシルエットを背後から浮かせて奥行きを出す）
+      const glow = color(L.sky.horizonGlow).mul(smoothstep(0.32, -0.02, elev));
+      mat.colorNode = mix(clouds, zenith, smoothstep(0.75, 1.05, v)).mul(smoothstep(-0.25, 0.05, v).mul(0.85).add(0.15)).add(glow);
       const m = new THREE.Mesh(new THREE.SphereGeometry(L.sky.radiusM, 64, 32), mat);
       m.renderOrder = -10;
       m.frustumCulled = false;

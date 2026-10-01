@@ -87,7 +87,7 @@
   "stage": {
     "background": "#05060b",
     "fog": {
-      "color": "#0d0e1c",
+      "color": "#17162a",
       "nearM": 30,
       "farM": 330,
       "groundHeightM": 1.5,
@@ -137,6 +137,38 @@
         "lookAtM": [
           0,
           0,
+          0
+        ]
+      },
+      {
+        "color": "#ffb060",
+        "intensity": 3.0,
+        "widthM": 40,
+        "heightM": 0.9,
+        "posM": [
+          10.6,
+          0.6,
+          0
+        ],
+        "lookAtM": [
+          0,
+          0.3,
+          0
+        ]
+      },
+      {
+        "color": "#ffb060",
+        "intensity": 3.0,
+        "widthM": 40,
+        "heightM": 0.9,
+        "posM": [
+          -10.6,
+          0.6,
+          0
+        ],
+        "lookAtM": [
+          0,
+          0.3,
           0
         ]
       }
@@ -220,10 +252,11 @@
         "radiusM": 600,
         "horizonDeg": -4,
         "bandDeg": 48,
-        "horizonColor": "#0e1022",
+        "horizonColor": "#2a1a34",
         "zenithColor": "#04050b",
         "repeat": 3,
-        "hdr": 0.5
+        "hdr": 0.5,
+        "horizonGlow": "#4a2a3a"
       },
       "layers": []
     },
@@ -578,8 +611,8 @@
     "fighter": {
       "paintBase": "#20242e",
       "paintMix": 0.55,
-      "paintRoughness": 0.38,
-      "paintMetalness": 0.35,
+      "paintRoughness": 0.45,
+      "paintMetalness": 0.6,
       "metalColor": "#5a606c",
       "metalRoughness": 0.3,
       "suitColor": "#23262f",
@@ -598,12 +631,12 @@
         "edgeColor": "#b8bcc4"
       },
       "foeGlowHdr": 2.4,
-      "clearcoat": 0.8,
+      "clearcoat": 0.3,
       "sheen": 0.5,
       "weavePerM": 220
     },
     "skyline": {
-      "count": 24,
+      "count": 20,
       "seed": 7,
       "radiusM": [
         140,
@@ -720,7 +753,7 @@
       "ringOuterM": 0.7,
       "hdr": 0.9,
       "opacity": 0.85,
-      "haloPx": 40,
+      "haloPx": 30,
       "haloHdr": 2.4,
       "foeMarkerPx": 20,
       "foeMarkerUpM": 0.55
@@ -731,8 +764,8 @@
       "hdr": 0.8,
       "opacity": 0.35,
       "nearFadeM": [
-        5,
-        12
+        9,
+        18
       ]
     },
     "ribbon": {

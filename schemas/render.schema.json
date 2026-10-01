@@ -908,7 +908,8 @@
                 "horizonColor",
                 "zenithColor",
                 "repeat",
-                "hdr"
+                "hdr",
+                "horizonGlow"
               ],
               "properties": {
                 "texture": {
@@ -945,6 +946,11 @@
                 "zenithColor": {
                   "type": "string",
                   "pattern": "^#[0-9a-fA-F]{6}$"
+                },
+                "horizonGlow": {
+                  "type": "string",
+                  "pattern": "^#[0-9a-fA-F]{6}$",
+                  "description": "地平線の光害（足す色）"
                 }
               }
             },
