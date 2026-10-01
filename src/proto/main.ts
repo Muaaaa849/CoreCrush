@@ -87,7 +87,12 @@ async function main(): Promise<void> {
   };
   newMatch();
 
-  const touchMode = new URLSearchParams(location.search).get('touch') === '1' || matchMedia('(pointer: coarse)').matches;
+  // 撮影モード（?shot=1&px=&pz=&yaw=&pitch=）: sim を止め、指定の位置・向きで描き続ける（見た目の評価ハーネス用。.harness/photoreal-arena）
+  const sq = new URLSearchParams(location.search);
+  const shot = sq.get('shot') === '1'
+    ? { px: Number(sq.get('px') ?? 0), pz: Number(sq.get('pz') ?? 0), yaw: Number(sq.get('yaw') ?? 0), pitch: Number(sq.get('pitch') ?? 0) }
+    : null;
+  const touchMode = !shot && (sq.get('touch') === '1' || matchMedia('(pointer: coarse)').matches);
   if (touchMode) document.documentElement.classList.add('touchMode');
   // --- 画質（高・中・低＋自動。Q-31）。自動は端末の既定の段階から、重いと描画解像度を段階的に下げる ---
   let qualitySetting = parseQualitySetting(store<unknown>('cc.quality', 'auto'));
@@ -127,6 +132,7 @@ async function main(): Promise<void> {
   const tc = new TouchControls(document.body, parseLayout(store<unknown>('cc.touchLayout', null)));
   const playing = () => input.locked || tc.active;
   const refreshMenu = () => {
+    if (shot) return;
     const on = playing();
     $('menu').hidden = on || editor.isOpen;
     $('hud').hidden = !on && world.tick === 0;
@@ -609,6 +615,10 @@ async function main(): Promise<void> {
     const alpha = playing() || onlinePeer ? acc / TICK_MS : 1;
     const me = world.players[ME];
     const pos = view.playerPos(ME, alpha);
+    if (shot) {
+      rig.yaw = shot.yaw;
+      rig.pitch = shot.pitch;
+    }
     rig.update(dt, pos, CameraRig.wantsFps(me), secondaryHeld() && me.holding, settings, balance);
     if (tc.active) {
       // 所持中は、いま投げたら出る球種をスティックとボタンに示す
@@ -631,6 +641,35 @@ async function main(): Promise<void> {
     updateHud();
     requestAnimationFrame(frame);
   };
+  if (shot) {
+    // 撮影モード: 自分を指定の位置に置き、メニューを隠して HUD を出す。読み込みが終わって数フレーム後に合図
+    world.players[ME].pos.x = shot.px;
+    world.players[ME].pos.z = shot.pz;
+    $('menu').hidden = true;
+    $('hud').hidden = false;
+    // 視点の切り替え（ページを読み直さずに次の視点へ）。数フレーム描いてから合図を 1 つ進める
+    let token = 0;
+    const settle = () => {
+      let n = 0;
+      const wait = () => {
+        if (++n < 30) requestAnimationFrame(wait);
+        else {
+          (window as unknown as { __ccShot: unknown }).__ccShot = { ...view.drawInfo(), backend: view.backend };
+          document.documentElement.dataset.shot = String(++token);
+        }
+      };
+      requestAnimationFrame(wait);
+    };
+    (window as unknown as { __ccSetShot: (v: typeof shot) => void }).__ccSetShot = (v) => {
+      Object.assign(shot, v);
+      world.players[ME].pos.x = shot.px;
+      world.players[ME].pos.z = shot.pz;
+      view.snapshot(world);
+      view.snapshot(world);
+      settle();
+    };
+    void view.assetsReady.then(settle);
+  }
   view.snapshot(world);
   view.snapshot(world);
   requestAnimationFrame(frame);

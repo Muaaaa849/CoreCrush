@@ -60,6 +60,8 @@ export class ProtoView {
   private cur: Snap = { px: [0, 0], pz: [0, 0], bx: 0, by: 0, bz: 0, bMode: '', bThrower: -1, bRally: 0 };
   private readonly post: PostPipeline;
   backend = 'unknown';
+  /** テクスチャ・モデルの読み込みが終わったら解決（撮影モードが待つ） */
+  assetsReady: Promise<void> = Promise.resolve();
 
   private constructor(renderer: THREE.WebGPURenderer, b: Balance, quality: QualityPreset, debugView: PostDebugView) {
     this.renderer = renderer;
@@ -126,7 +128,7 @@ export class ProtoView {
         const v = new ProtoView(renderer, b, quality, debugView);
         v.stage.buildEnvironment(renderer, PLAYER_COLOR);
         // テクスチャ・遠景は待たずに始める（読めたら差し替わる）
-        void v.stage.loadAssets(renderer);
+        v.assetsReady = v.stage.loadAssets(renderer).catch((e: unknown) => console.warn('アセットの読み込みに失敗', e));
         v.setQuality(quality);
         v.post.render();
         v.backend = (renderer.backend as unknown as { isWebGPUBackend?: boolean }).isWebGPUBackend ? 'WebGPU' : 'WebGL2';

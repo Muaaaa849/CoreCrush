@@ -1,27 +1,26 @@
 {
   "heightM": 8,
-  "colorA": "#35f2ff",
-  "colorB": "#ff2bd6",
-  "baseHdr": 0.04,
-  "streakHdr": 0.45,
-  "fresnelHdr": 0.3,
-  "noiseScale": [
-    0.35,
-    0.6
-  ],
-  "scrollMps": 0.8,
+  "tintColor": "#35f2ff",
+  "baseHdr": 0.015,
   "topFadeM": 2.5,
+  "pulse": {
+    "periodSec": 4,
+    "speedMps": 8,
+    "widthM": 1.5,
+    "hdr": 0.08
+  },
+  "distortion": {
+    "amount": 0.0012,
+    "waveM": 4,
+    "speed": 0.5
+  },
   "ripple": {
     "max": 4,
     "speedMps": 5,
-    "widthM": 0.35,
-    "lifeSec": 0.9,
-    "crossHdr": 1.4,
-    "touchHdr": 0.9,
-    "touchCooldownSec": 0.35
-  },
-  "flash": {
-    "hdr": 0.25,
-    "decaySec": 0.25
+    "widthM": 0.5,
+    "lifeSec": 0.8,
+    "crossHdr": 0.25,
+    "touchHdr": 0.08,
+    "touchCooldownSec": 0.6
   }
 }

@@ -1,38 +1,40 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "CORE-CRUSH プラズマ・フェンス（GDD 13）",
+  "title": "CORE-CRUSH プラズマ・フェンス（GDD 13。プランナー 2026-10-01: ノイズの放電は入れない。定期的に薄く色づく波紋＋うっすら歪むだけ）",
   "type": "object",
   "additionalProperties": false,
-  "required": ["heightM", "colorA", "colorB", "baseHdr", "streakHdr", "fresnelHdr", "noiseScale", "scrollMps", "topFadeM", "ripple", "flash"],
+  "required": ["heightM", "tintColor", "baseHdr", "topFadeM", "pulse", "distortion", "ripple"],
   "definitions": {
-    "hex": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
-    "low": { "description": "常時の発光: ブルームのしきい値（1.0）未満", "type": "number", "minimum": 0, "exclusiveMaximum": 1 }
+    "faint": { "description": "フェンスの色づき: 球が見えなくならないよう弱く（0.3 未満）", "type": "number", "minimum": 0, "maximum": 0.3 }
   },
   "properties": {
     "heightM": { "type": "number", "exclusiveMinimum": 0 },
-    "colorA": { "$ref": "#/definitions/hex" },
-    "colorB": { "$ref": "#/definitions/hex" },
-    "baseHdr": { "$ref": "#/definitions/low" },
-    "streakHdr": { "$ref": "#/definitions/low" },
-    "fresnelHdr": { "$ref": "#/definitions/low" },
-    "noiseScale": { "type": "array", "items": { "type": "number", "exclusiveMinimum": 0 }, "minItems": 2, "maxItems": 2 },
-    "scrollMps": { "type": "number" },
+    "tintColor": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
+    "baseHdr": { "$ref": "#/definitions/faint" },
     "topFadeM": { "type": "number", "minimum": 0 },
+    "pulse": {
+      "description": "定期的に中央から広がる薄い色の波紋",
+      "type": "object", "additionalProperties": false, "required": ["periodSec", "speedMps", "widthM", "hdr"],
+      "properties": { "periodSec": { "type": "number", "exclusiveMinimum": 0 }, "speedMps": { "type": "number", "exclusiveMinimum": 0 }, "widthM": { "type": "number", "exclusiveMinimum": 0 }, "hdr": { "$ref": "#/definitions/faint" } }
+    },
+    "distortion": {
+      "description": "向こう側の景色をうっすら歪める（滑らかな波。画面の UV に対する量）",
+      "type": "object", "additionalProperties": false, "required": ["amount", "waveM", "speed"],
+      "properties": { "amount": { "type": "number", "minimum": 0, "maximum": 0.01 }, "waveM": { "type": "number", "exclusiveMinimum": 0 }, "speed": { "type": "number", "minimum": 0 } }
+    },
     "ripple": {
-      "description": "ヒット波紋。最大数は uniform の配列長で固定（vfx 規則）",
-      "type": "object",
-      "additionalProperties": false,
+      "description": "球の通過・人が触れたときの波紋（uniform 4 つを使い回す。vfx 規則）",
+      "type": "object", "additionalProperties": false,
       "required": ["max", "speedMps", "widthM", "lifeSec", "crossHdr", "touchHdr", "touchCooldownSec"],
       "properties": {
         "max": { "const": 4 },
         "speedMps": { "type": "number", "exclusiveMinimum": 0 },
         "widthM": { "type": "number", "exclusiveMinimum": 0 },
         "lifeSec": { "type": "number", "exclusiveMinimum": 0 },
-        "crossHdr": { "description": "球の通過（一瞬なのでコアより明るくてよいが短く）", "type": "number", "minimum": 0 },
-        "touchHdr": { "type": "number", "minimum": 0 },
+        "crossHdr": { "$ref": "#/definitions/faint" },
+        "touchHdr": { "$ref": "#/definitions/faint" },
         "touchCooldownSec": { "type": "number", "minimum": 0 }
       }
-    },
-    "flash": { "type": "object", "additionalProperties": false, "required": ["hdr", "decaySec"], "properties": { "hdr": { "type": "number", "minimum": 0 }, "decaySec": { "type": "number", "exclusiveMinimum": 0 } } }
+    }
   }
 }
