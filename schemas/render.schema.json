@@ -371,7 +371,10 @@
         "crowd",
         "backdrop",
         "props",
-        "fire"
+        "fire",
+        "fighter",
+        "skyline",
+        "floods"
       ],
       "properties": {
         "background": {
@@ -781,8 +784,10 @@
               "required": [
                 "texture",
                 "radiusM",
-                "heightM",
-                "yM",
+                "horizonDeg",
+                "bandDeg",
+                "horizonColor",
+                "zenithColor",
                 "repeat",
                 "hdr"
               ],
@@ -796,13 +801,6 @@
                   "type": "number",
                   "exclusiveMinimum": 0
                 },
-                "heightM": {
-                  "type": "number",
-                  "exclusiveMinimum": 0
-                },
-                "yM": {
-                  "type": "number"
-                },
                 "repeat": {
                   "type": "integer",
                   "minimum": 1
@@ -812,6 +810,22 @@
                   "minimum": 0,
                   "exclusiveMaximum": 1,
                   "description": "背景は光らせない（ブルームのしきい値未満）"
+                },
+                "horizonDeg": {
+                  "type": "number",
+                  "description": "雲の絵の下端（地平線からの仰角・度）"
+                },
+                "bandDeg": {
+                  "type": "number",
+                  "description": "雲の絵の上端（これより上は天頂の色へ）"
+                },
+                "horizonColor": {
+                  "type": "string",
+                  "pattern": "^#[0-9a-fA-F]{6}$"
+                },
+                "zenithColor": {
+                  "type": "string",
+                  "pattern": "^#[0-9a-fA-F]{6}$"
                 }
               }
             },
@@ -954,6 +968,183 @@
               "type": "number",
               "minimum": 0,
               "maximum": 1
+            }
+          }
+        },
+        "fighter": {
+          "description": "仮の選手モデル（CSG。src/render/csgParts.ts）の素材。塗装＝チーム色を paintBase へ paintMix だけ寄せる",
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "paintBase",
+            "paintMix",
+            "paintRoughness",
+            "paintMetalness",
+            "metalColor",
+            "metalRoughness",
+            "suitColor",
+            "glowHdr"
+          ],
+          "properties": {
+            "paintBase": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}$"
+            },
+            "paintMix": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "paintRoughness": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "paintMetalness": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "metalColor": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}$"
+            },
+            "metalRoughness": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "suitColor": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}$"
+            },
+            "glowHdr": {
+              "description": "発光ラインの強さ（コアより暗く）",
+              "type": "number",
+              "minimum": 0,
+              "maximum": 3
+            }
+          }
+        },
+        "skyline": {
+          "description": "遠景のビル群（three 公式 SkyscraperGenerator。src/render/skyline.ts）",
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "count",
+            "seed",
+            "radiusM",
+            "heightM",
+            "baseYM",
+            "wallColor",
+            "windowHdr",
+            "litChance"
+          ],
+          "properties": {
+            "count": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 40
+            },
+            "seed": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "radiusM": {
+              "type": "array",
+              "items": {
+                "type": "number",
+                "minimum": 0
+              },
+              "minItems": 2,
+              "maxItems": 2
+            },
+            "heightM": {
+              "type": "array",
+              "items": {
+                "type": "number",
+                "minimum": 0
+              },
+              "minItems": 2,
+              "maxItems": 2
+            },
+            "baseYM": {
+              "type": "number"
+            },
+            "wallColor": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}$"
+            },
+            "windowHdr": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 2,
+              "description": "窓の明かり（生成器の発光に掛ける）"
+            },
+            "litChance": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          }
+        },
+        "floods": {
+          "description": "天井の投光器（キーライト。影は落とさない＝影は主光源 1 灯の規則）。items は [灯の x, 灯の z, 狙う x, 狙う z]（m）",
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "color",
+            "intensity",
+            "angleDeg",
+            "penumbra",
+            "decay",
+            "rangeM",
+            "heightM",
+            "items"
+          ],
+          "properties": {
+            "color": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}$"
+            },
+            "intensity": {
+              "type": "number",
+              "minimum": 0,
+              "description": "カンデラ"
+            },
+            "angleDeg": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "maximum": 89
+            },
+            "penumbra": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "decay": {
+              "type": "number",
+              "minimum": 0
+            },
+            "rangeM": {
+              "type": "number",
+              "minimum": 0
+            },
+            "heightM": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "items": {
+              "type": "array",
+              "maxItems": 8,
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "minItems": 4,
+                "maxItems": 4
+              }
             }
           }
         }

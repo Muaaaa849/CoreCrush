@@ -2,13 +2,13 @@
 // 霧の外（遠すぎて距離の霧で消える）なので霧は掛けず、自前で暗く・彩度を落として「背景の彩度を抑える」（GDD 12.2）。
 // 画像が読めない環境では何も出さない（背景色のまま）。
 import * as THREE from 'three/webgpu';
-import { color, dot, float, min, mix, positionWorld, smoothstep, texture, vec3 } from 'three/tsl';
+import { asin, atan, clamp, color, dot, float, min, mix, normalize, positionLocal, positionWorld, smoothstep, texture, vec2, vec3 } from 'three/tsl';
 import { loadTexture } from './assets';
 
 export interface BackdropLook {
   haze: string;
   saturation: number;
-  sky: { texture: string; radiusM: number; heightM: number; yM: number; repeat: number; hdr: number };
+  sky: { texture: string; radiusM: number; horizonDeg: number; bandDeg: number; horizonColor: string; zenithColor: string; repeat: number; hdr: number };
   layers: { texture: string; radiusM: number; count: number; widthM: number; yM: number; startDeg: number; hdr: number; haze: number }[];
 }
 
@@ -31,17 +31,20 @@ export class Backdrop {
     const sky = await loadTexture(renderer, L.sky.texture);
     if (sky) {
       sky.wrapS = THREE.MirroredRepeatWrapping;
+      sky.wrapT = THREE.ClampToEdgeWrapping;
+      // 全天のドーム（円筒の上が抜けて黒く見えるのをやめる）。地平線から horizonDeg〜bandDeg に雲の絵、天頂は色のグラデーション
       const mat = new THREE.MeshBasicNodeMaterial({ side: THREE.BackSide, depthWrite: false, fog: false });
-      const t = texture(sky);
-      mat.colorNode = grade(t.rgb, L.saturation, L.sky.hdr, L.haze, float(0));
-      const geo = new THREE.CylinderGeometry(L.sky.radiusM, L.sky.radiusM, L.sky.heightM, 48, 1, true);
-      const uv = geo.getAttribute('uv') as THREE.BufferAttribute;
-      for (let i = 0; i < uv.count; i++) uv.setX(i, uv.getX(i) * L.sky.repeat);
-      const m = new THREE.Mesh(geo, mat);
-      m.position.y = L.sky.yM + L.sky.heightM / 2;
-      // 鏡映しの継ぎ目を正面（相手の方向）から外す
-      m.rotation.y = Math.PI / L.sky.repeat;
+      const dir = normalize(positionLocal);
+      const elev = asin(clamp(dir.y, -1, 1));
+      const az = atan(dir.x, dir.z).div(Math.PI * 2).add(0.5);
+      const v = elev.sub(THREE.MathUtils.degToRad(L.sky.horizonDeg)).div(THREE.MathUtils.degToRad(L.sky.bandDeg - L.sky.horizonDeg));
+      const t = texture(sky, vec2(az.mul(L.sky.repeat), clamp(v, 0.002, 0.998)));
+      const clouds = grade(t.rgb, L.saturation, L.sky.hdr, L.haze, float(0));
+      const zenith = mix(color(L.sky.horizonColor), color(L.sky.zenithColor), smoothstep(0.6, 1.6, v));
+      mat.colorNode = mix(clouds, zenith, smoothstep(0.75, 1.05, v)).mul(smoothstep(-0.25, 0.05, v).mul(0.85).add(0.15));
+      const m = new THREE.Mesh(new THREE.SphereGeometry(L.sky.radiusM, 64, 32), mat);
       m.renderOrder = -10;
+      m.frustumCulled = false;
       this.group.add(m);
     }
     for (const layer of L.layers) {

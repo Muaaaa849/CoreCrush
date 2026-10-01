@@ -9,6 +9,7 @@ import { Stage } from './stage';
 import { CoreFace } from '../vfx/coreFace';
 import { PlasmaFence } from '../vfx/plasmaFence';
 import { Dust } from './dust';
+import { buildFighter } from './csgParts';
 
 export type FaceStage = 'smile' | 'nervous' | 'angry' | 'blink' | 'crack';
 
@@ -45,7 +46,8 @@ export class ProtoView {
   readonly renderer: THREE.WebGPURenderer;
   readonly scene = new THREE.Scene();
   readonly camera = new THREE.PerspectiveCamera(75, 16 / 9, 0.05, 1000);
-  private players: THREE.Mesh[] = [];
+  private players: THREE.Group[] = [];
+  private glowBase = 0;
   private playerMats: THREE.MeshStandardNodeMaterial[] = [];
   private playerRims: { value: number }[] = [];
   private playerBlobs: THREE.Mesh[] = [];
@@ -82,20 +84,29 @@ export class ProtoView {
     const r = b.player.bodyRadiusM;
     const h = b.player.bodyHeightM;
     const rimLook = RENDER_LOOK.stage.opponentRim;
+    const F = RENDER_LOOK.stage.fighter;
+    const fg = buildFighter(h);
     for (const side of [0, 1] as const) {
-      const mat = new THREE.MeshStandardNodeMaterial({ color: PLAYER_COLOR[side], emissive: PLAYER_COLOR[side], emissiveIntensity: 0.15, roughness: 0.5, transparent: true });
+      const team = new THREE.Color(PLAYER_COLOR[side]);
       // 相手にリムライト（背景から浮かせる。GDD 12.2 の可読性）。自分は 0
       const rim = uniform(0);
       const fres = float(1).sub(clamp(dot(normalView, positionViewDirection), 0, 1)).pow(rimLook.power);
-      mat.emissiveNode = materialEmissive.add(color(PLAYER_COLOR[side]).mul(fres).mul(rim));
+      const rimNode = color(PLAYER_COLOR[side]).mul(fres).mul(rim);
+      const paint = new THREE.MeshStandardNodeMaterial({ color: team.clone().lerp(new THREE.Color(F.paintBase), F.paintMix), roughness: F.paintRoughness, metalness: F.paintMetalness });
+      paint.emissiveNode = rimNode;
+      const metal = new THREE.MeshStandardNodeMaterial({ color: new THREE.Color(F.metalColor), roughness: F.metalRoughness, metalness: 0.9 });
+      metal.emissiveNode = rimNode;
+      const suit = new THREE.MeshStandardNodeMaterial({ color: new THREE.Color(F.suitColor), roughness: 0.85, metalness: 0 });
+      suit.emissiveNode = rimNode;
+      // 発光ライン（行動の合図の色もここ。tint() が emissive を変える）
+      const mat = new THREE.MeshStandardNodeMaterial({ color: 0x000000, emissive: PLAYER_COLOR[side], emissiveIntensity: F.glowHdr, roughness: 0.4 });
       this.playerRims.push(rim);
-      const m = new THREE.Mesh(new THREE.BoxGeometry(r * 2, h, r * 2), mat);
-      m.position.y = h / 2;
-      m.castShadow = true;
-      // 向きを示す「顔」
-      const nose = new THREE.Mesh(new THREE.BoxGeometry(r * 1.2, 0.18, 0.1), new THREE.MeshBasicMaterial({ color: 0xffffff }));
-      nose.position.set(0, h * 0.3, r + 0.05);
-      m.add(nose);
+      const m = new THREE.Group();
+      for (const [g, mm] of [[fg.paint, paint], [fg.metal, metal], [fg.suit, suit], [fg.glow, mat]] as const) {
+        const part = new THREE.Mesh(g, mm);
+        part.castShadow = true;
+        m.add(part);
+      }
       this.scene.add(m);
       this.players.push(m);
       this.playerMats.push(mat);
@@ -107,6 +118,7 @@ export class ProtoView {
       this.playerBlobs.push(blob);
     }
     this.rimHdr = rimLook.hdr;
+    this.glowBase = F.glowHdr;
 
     this.ball = new THREE.Mesh(new THREE.SphereGeometry(b.ball.radiusM, 48, 24), this.face.material);
     this.ball.castShadow = true;
@@ -226,17 +238,17 @@ export class ProtoView {
     const mat = this.playerMats[i]!;
     const base = PLAYER_COLOR[i]!;
     let emissive: number = base;
-    let intensity = 0.15;
+    let k = 1;
     switch (p.action) {
-      case 'catch': emissive = 0xffffff; intensity = 0.9; break;
-      case 'parry': emissive = 0xffe066; intensity = 0.9; break;
-      case 'stagger': emissive = 0x555566; intensity = 0.05 + 0.1 * (Math.sin(timeMs / 40) > 0 ? 1 : 0); break;
-      case 'hitReaction': emissive = 0xff2020; intensity = 1.2; break;
-      case 'step': intensity = 0.8; break;
-      case 'windup': case 'fakeWindup': intensity = 0.5; break;
+      case 'catch': emissive = 0xffffff; k = 2; break;
+      case 'parry': emissive = 0xffe066; k = 2; break;
+      case 'stagger': emissive = 0x555566; k = Math.sin(timeMs / 40) > 0 ? 1 : 0.2; break;
+      case 'hitReaction': emissive = 0xff2020; k = 2.5; break;
+      case 'step': k = 1.8; break;
+      case 'windup': case 'fakeWindup': k = 1.4; break;
     }
     mat.emissive.setHex(emissive);
-    mat.emissiveIntensity = intensity;
+    mat.emissiveIntensity = this.glowBase * k;
   }
 
   /**
@@ -261,8 +273,6 @@ export class ProtoView {
       this.playerRims[pl.side]!.value = pl.side === me ? 0 : this.rimHdr;
       // 自分は FPS のとき隠す。相手は常に自分の方を向く
       m.visible = !(pl.side === me && cam.blend > 0.5);
-      // TPS の自分は半透明にして前が見えるようにする
-      this.playerMats[pl.side]!.opacity = pl.side === me ? 0.35 : 1;
       if (pl.side === me) m.rotation.y = cam.yaw;
       else m.rotation.y = pl.side === 0 ? 0 : Math.PI;
       this.tint(pl, pl.side, timeMs);

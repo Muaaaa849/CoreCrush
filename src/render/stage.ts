@@ -13,6 +13,8 @@ import { Floor, type FloorLook } from './floor';
 import { Backdrop, type BackdropLook } from './backdrop';
 import { loadTexture } from './assets';
 import { Props, type FireLook, type PropGroup } from './props';
+import { buildPost } from './csgParts';
+import { Skyline, type SkylineLook } from './skyline';
 
 type Vec3 = [number, number, number];
 export interface StageLook {
@@ -24,8 +26,11 @@ export interface StageLook {
   env: { intensity: number; panelHdr: number };
   floor: FloorLook;
   backdrop: BackdropLook;
+  skyline: SkylineLook;
+  floods: { color: string; intensity: number; angleDeg: number; penumbra: number; decay: number; rangeM: number; heightM: number; items: [number, number, number, number][] };
   props: PropGroup[];
   fire: FireLook;
+  fighter: { paintBase: string; paintMix: number; paintRoughness: number; paintMetalness: number; metalColor: string; metalRoughness: number; suitColor: string; glowHdr: number };
   lines: { widthM: number; hdr: number };
   cage: { color: string; heightM: number; cellM: number; wireFrac: number; opacity: number; marginM: number; postColor: string; postSpacingM: number };
   opponentRim: { hdr: number; power: number };
@@ -50,6 +55,7 @@ export class Stage {
   private readonly floor: Floor;
   private readonly backdrop: Backdrop;
   private readonly props: Props;
+  private readonly skyline: Skyline;
   private env: THREE.RenderTarget | null = null;
 
   constructor(
@@ -94,6 +100,16 @@ export class Stage {
       scene.add(l);
     }
 
+    // --- 投光器（キーライト。床に光だまりを作る。影は主光源だけ） ---
+    const FL = L.floods;
+    for (const [x, z, tx, tz] of FL.items) {
+      const l = new THREE.SpotLight(new THREE.Color(FL.color), FL.intensity, FL.rangeM, THREE.MathUtils.degToRad(FL.angleDeg), FL.penumbra, FL.decay);
+      l.position.set(x, FL.heightM, z);
+      l.target.position.set(tx, 0, tz);
+      l.castShadow = false;
+      scene.add(l, l.target);
+    }
+
     // --- 床（CC0 アスファルト＋水たまり＋平面反射。src/render/floor.ts） ---
     this.floor = new Floor(b, L.floor, L.lines, playerColors, 24);
     scene.add(this.floor.mesh);
@@ -101,6 +117,8 @@ export class Stage {
     // --- 遠景（プランナー生成の画像。読み込めたら表示） ---
     this.backdrop = new Backdrop(L.backdrop);
     scene.add(this.backdrop.group);
+    this.skyline = new Skyline(L.skyline);
+    scene.add(this.skyline.group);
 
     // --- コート外周の小物（CC0 モデル。読み込めたら表示） ---
     this.props = new Props(L.props, L.fire);
@@ -128,9 +146,9 @@ export class Stage {
     const posts: [number, number][] = [];
     for (let x = -cx; x <= cx + 1e-6; x += C.postSpacingM) posts.push([x, -cz], [x, cz]);
     for (let z = -cz + C.postSpacingM; z < cz - 1e-6; z += C.postSpacingM) posts.push([-cx, z], [cx, z]);
-    const postMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(0.14, C.heightM, 0.14), new THREE.MeshStandardMaterial({ color: new THREE.Color(C.postColor), roughness: 0.6, metalness: 0.7 }), posts.length);
+    const postMesh = new THREE.InstancedMesh(buildPost(0.16, C.heightM), new THREE.MeshStandardMaterial({ color: new THREE.Color(C.postColor), roughness: 0.6, metalness: 0.7 }), posts.length);
     const m = new THREE.Matrix4();
-    posts.forEach(([x, z], i) => postMesh.setMatrixAt(i, m.makeTranslation(x, C.heightM / 2, z)));
+    posts.forEach(([x, z], i) => postMesh.setMatrixAt(i, m.makeTranslation(x, 0, z)));
     postMesh.castShadow = true;
     scene.add(postMesh);
 
@@ -216,6 +234,7 @@ export class Stage {
     this.crowd.count = Math.round(this.crowdMax * q.decorMul);
     this.floor.setReflection(q.floorReflection);
     this.props.applyDecor(q.decorMul);
+    this.skyline.applyDecor(q.decorMul);
   }
 }
 
