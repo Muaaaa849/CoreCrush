@@ -108,7 +108,7 @@
     "cost": 0.25
   },
   "catch": {
-    "startupF": 0,
+    "startupF": 2,
     "recoveryF": 22,
     "whiffStaggerF": 48,
     "windowByDefenseF": [
@@ -139,7 +139,7 @@
     "justBonusGain": 0.25
   },
   "parry": {
-    "startupF": 0,
+    "startupF": 2,
     "windowF": 9,
     "recoveryF": 10,
     "whiffStaggerF": 24,
