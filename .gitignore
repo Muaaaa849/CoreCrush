@@ -9,3 +9,4 @@ dist-lab/
 workers/signaling/public/
 dist-pages/
 art/source/
+.claude/settings.local.json
