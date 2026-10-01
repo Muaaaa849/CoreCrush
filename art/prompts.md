@@ -18,3 +18,5 @@
 |---|---|---|
 | asphalt_02（色・法線・粗さ 1K） | Poly Haven https://polyhaven.com/a/asphalt_02 | CC0 1.0 |
 | 小物の 3D モデル 10 点（security_light, Barrel_01, barrel_03, barrel_stove, exterior_aircon_unit, modular_industrial_pipes_01, old_tyre, power_box_01, security_camera_01, propane_tank） | Poly Haven https://polyhaven.com/models （一覧は `art/models.json`、`npm run assets` で meshopt＋KTX2 512px の glb に） | CC0 1.0 |
+| コート脇の小物 8 点（2026-10-01 追加: plastic_crate_02, old_military_crate, metal_toolbox, metal_jerrycan_green, korean_fire_extinguisher_01, metal_stool_02, metal_trash_can, portable_searchlight） | Poly Haven https://polyhaven.com/models （同上） | CC0 1.0 |
+| HUD の書体（Chakra Petch 600/700・JetBrains Mono 400/600、ラテン文字のサブセット woff2） | Google Fonts https://fonts.google.com/specimen/Chakra+Petch , https://fonts.google.com/specimen/JetBrains+Mono → `assets/fonts/` | SIL OFL 1.1 |

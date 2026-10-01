@@ -1157,7 +1157,9 @@
                 "seamFrac",
                 "seamDarken",
                 "wearScale",
-                "wearRoughness"
+                "wearRoughness",
+                "edgeWear",
+                "edgeColor"
               ],
               "properties": {
                 "panelM": {
@@ -1187,6 +1189,16 @@
                   "type": "number",
                   "minimum": 0,
                   "maximum": 1
+                },
+                "edgeWear": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1,
+                  "description": "角の塗装の剥げ（画面上の法線の変化で角を見つける）"
+                },
+                "edgeColor": {
+                  "type": "string",
+                  "pattern": "^#[0-9a-fA-F]{6}$"
                 }
               }
             },

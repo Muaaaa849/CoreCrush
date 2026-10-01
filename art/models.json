@@ -41,6 +41,38 @@
     {
       "id": "propane_tank",
       "simplify": 0.8
+    },
+    {
+      "id": "plastic_crate_02",
+      "simplify": 1
+    },
+    {
+      "id": "old_military_crate",
+      "simplify": 0.5
+    },
+    {
+      "id": "metal_toolbox",
+      "simplify": 0.35
+    },
+    {
+      "id": "metal_jerrycan_green",
+      "simplify": 0.5
+    },
+    {
+      "id": "korean_fire_extinguisher_01",
+      "simplify": 0.5
+    },
+    {
+      "id": "metal_stool_02",
+      "simplify": 0.6
+    },
+    {
+      "id": "metal_trash_can",
+      "simplify": 0.4
+    },
+    {
+      "id": "portable_searchlight",
+      "simplify": 0.4
     }
   ]
 }
