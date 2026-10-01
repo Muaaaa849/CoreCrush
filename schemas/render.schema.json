@@ -601,7 +601,8 @@
             "reflectDry",
             "reflectDistortion",
             "paint",
-            "macroScale"
+            "macroScale",
+            "reflectResolution"
           ],
           "properties": {
             "tileM": {
@@ -724,6 +725,11 @@
             "macroScale": {
               "type": "number",
               "minimum": 0
+            },
+            "reflectResolution": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "maximum": 1
             }
           }
         },
@@ -1165,7 +1171,8 @@
                 "wearScale",
                 "wearRoughness",
                 "edgeWear",
-                "edgeColor"
+                "edgeColor",
+                "bump"
               ],
               "properties": {
                 "panelM": {
@@ -1205,6 +1212,12 @@
                 "edgeColor": {
                   "type": "string",
                   "pattern": "^#[0-9a-fA-F]{6}$"
+                },
+                "bump": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 10,
+                  "description": "継ぎ目の溝と傷の凹凸（手続き的な高さの微分で法線を傾ける）"
                 }
               }
             },

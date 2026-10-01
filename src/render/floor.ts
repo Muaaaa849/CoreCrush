@@ -26,6 +26,8 @@ export interface FloorLook {
   reflectPuddle: number;
   reflectDry: number;
   reflectDistortion: number;
+  /** 平面反射の解像度（描画解像度に対する倍率） */
+  reflectResolution: number;
   /** コートの塗装（白線・中央の円・陣地の円、剥げ）。光らない普通の塗料 */
   paint: { color: string; widthM: number; insetM: number; circleM: number; zoneCircleM: number; wear: number; albedo: number };
   /** タイリングを崩す 2 枚目の縮尺（1 枚目に対する倍率） */
@@ -103,7 +105,7 @@ export class Floor {
 
     // 平面反射: 水たまりで強く、乾いた所は弱く。斜めから見るほど強い（フレネル）。法線で少し揺らす
     if (L.reflectPuddle > 0) {
-      const r = reflector({ resolutionScale: 0.5 });
+      const r = reflector({ resolutionScale: L.reflectResolution });
       // 反射面は床と同じ向き（床のメッシュは水平に回転済みなので、子にすれば回転は要らない）
       this.mesh.add(r.target);
       const nd = this.nor.xy.sub(0.5).mul(L.reflectDistortion).mul(float(1).sub(puddle.mul(0.8)));

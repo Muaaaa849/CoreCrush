@@ -193,7 +193,7 @@
       "grimeAmount": 0.35,
       "reflectPuddle": 0.8,
       "reflectDry": 0.12,
-      "reflectDistortion": 0.04,
+      "reflectDistortion": 0.02,
       "paint": {
         "color": "#e8e4d8",
         "widthM": 0.12,
@@ -203,7 +203,8 @@
         "wear": 0.35,
         "albedo": 0.55
       },
-      "macroScale": 0.13
+      "macroScale": 0.13,
+      "reflectResolution": 0.75
     },
     "lines": {
       "widthM": 0.08,
@@ -628,7 +629,8 @@
         "wearScale": 9,
         "wearRoughness": 0.35,
         "edgeWear": 0.8,
-        "edgeColor": "#b8bcc4"
+        "edgeColor": "#b8bcc4",
+        "bump": 0.6
       },
       "foeGlowHdr": 2.4,
       "clearcoat": 0.3,
@@ -753,7 +755,7 @@
       "ringOuterM": 0.7,
       "hdr": 0.9,
       "opacity": 0.85,
-      "haloPx": 30,
+      "haloPx": 40,
       "haloHdr": 2.4,
       "foeMarkerPx": 20,
       "foeMarkerUpM": 0.55
@@ -764,8 +766,8 @@
       "hdr": 0.8,
       "opacity": 0.35,
       "nearFadeM": [
-        9,
-        18
+        6,
+        14
       ]
     },
     "ribbon": {
