@@ -318,6 +318,13 @@ export class ProtoView {
         this.impact.play(e.kind, me.x + dx * f, b.player.chestHeightM, me.z + dz * f, dx, 0.15, dz, this.fxColor);
         break;
       }
+      case 'explosion': {
+        // sim はこの tick で球を次のコートへ置き直しているので、直前に描いた球の位置で爆発させる
+        const bp = this.ball.position;
+        this.impact.explode(bp.x, bp.y, bp.z);
+        if (e.side === this.me) this.shake.trigger('explosion', Math.max(this.lastTimeMs, 0) / 1000);
+        break;
+      }
       case 'hit':
         // 自分が被弾したときだけ揺らす（照準は変えない。描画用カメラだけ）
         if (e.side === this.me) this.shake.trigger('hit', Math.max(this.lastTimeMs, 0) / 1000);

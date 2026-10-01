@@ -1,0 +1,61 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CORE-CRUSH 爆発の演出（GDD 13: 閃光＋破片＋衝撃波リング。上限 2,000 粒・1.2 秒）",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["fireball", "rings", "sparks", "debris"],
+  "definitions": {
+    "hex": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
+    "sparks": {
+      "type": "object", "additionalProperties": false,
+      "required": ["color", "count", "speedMps", "speedJitter", "spreadDeg", "lifeSec", "streakSec", "hdr", "gravityMps2", "dragPerSec"],
+      "properties": {
+        "color": { "$ref": "#/definitions/hex" },
+        "count": { "type": "integer", "minimum": 0, "maximum": 2000 },
+        "speedMps": { "type": "number", "minimum": 0 },
+        "speedJitter": { "type": "number", "minimum": 0, "maximum": 1 },
+        "spreadDeg": { "type": "number", "minimum": 0, "maximum": 360 },
+        "lifeSec": { "type": "number", "exclusiveMinimum": 0, "maximum": 1.2 },
+        "streakSec": { "type": "number", "minimum": 0 },
+        "hdr": { "description": "コアの顔より暗く（validate-data）", "type": "number", "minimum": 0 },
+        "gravityMps2": { "type": "number", "minimum": 0 },
+        "dragPerSec": { "type": "number", "minimum": 0 }
+      }
+    }
+  },
+  "properties": {
+    "$schema": { "type": "string" },
+    "fireball": {
+      "description": "火の玉（カメラを向く板に TSL）。出始めの閃光だけコアより明るくてよい（flashSec 以内）",
+      "type": "object", "additionalProperties": false,
+      "required": ["radiusM", "growSec", "lifeSec", "color", "coreColor", "hdr", "flashHdr", "flashSec"],
+      "properties": {
+        "radiusM": { "type": "number", "exclusiveMinimum": 0 },
+        "growSec": { "type": "number", "exclusiveMinimum": 0 },
+        "lifeSec": { "type": "number", "exclusiveMinimum": 0, "maximum": 1.2 },
+        "color": { "$ref": "#/definitions/hex" },
+        "coreColor": { "$ref": "#/definitions/hex" },
+        "hdr": { "type": "number", "minimum": 0 },
+        "flashHdr": { "type": "number", "minimum": 0 },
+        "flashSec": { "description": "閃光の長さ。コアより明るい発光を長く出さない（0.15 秒まで）", "type": "number", "minimum": 0, "maximum": 0.15 }
+      }
+    },
+    "rings": {
+      "type": "array", "maxItems": 2,
+      "items": {
+        "type": "object", "additionalProperties": false, "required": ["atFloor", "radiusM", "widthMul", "lifeSec", "hdr", "fill", "color"],
+        "properties": {
+          "atFloor": { "description": "true: 床に水平に広がる輪 / false: カメラを向く輪", "type": "boolean" },
+          "radiusM": { "type": "number", "exclusiveMinimum": 0 },
+          "widthMul": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 },
+          "lifeSec": { "type": "number", "exclusiveMinimum": 0, "maximum": 1.2 },
+          "hdr": { "type": "number", "minimum": 0 },
+          "fill": { "type": "number", "minimum": 0, "maximum": 1 },
+          "color": { "$ref": "#/definitions/hex" }
+        }
+      }
+    },
+    "sparks": { "$ref": "#/definitions/sparks" },
+    "debris": { "$ref": "#/definitions/sparks" }
+  }
+}

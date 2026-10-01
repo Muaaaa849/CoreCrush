@@ -120,5 +120,18 @@ const shake = load('data/vfx/screenShake.json');
 const validateS = ajv.compile(load('schemas/screenShake.schema.json'));
 if (!validateS(shake)) for (const e of validateS.errors ?? []) fail(`vfx/screenShake.json${e.instancePath} ${e.message}`);
 
+// 爆発（GDD 13）。閃光以外はコアの顔より暗く、粒は合わせて 2,000 以下・火花のプールに収まる
+const explosion = load('data/vfx/explosion.json');
+const validateE = ajv.compile(load('schemas/explosion.schema.json'));
+if (!validateE(explosion)) for (const e of validateE.errors ?? []) fail(`vfx/explosion.json${e.instancePath} ${e.message}`);
+else {
+  const ex = explosion;
+  for (const [k, v] of [['fireball.hdr', ex.fireball.hdr], ['sparks.hdr', ex.sparks.hdr], ['debris.hdr', ex.debris.hdr], ...ex.rings.map((r, i) => [`rings[${i}].hdr`, r.hdr])])
+    if (v >= face.faceHdr) fail(`explosion.${k}(${v}) がコアの顔(${face.faceHdr}) 以上`);
+  const n = ex.sparks.count + ex.debris.count;
+  if (n > 2000) fail(`explosion の粒が 2,000 を超える（${n}）`);
+  if (n > impact.sparkPool) fail(`explosion の粒(${n}) が impact.sparkPool(${impact.sparkPool}) より多い`);
+}
+
 if (failed) process.exit(1);
-console.log('OK  data/balance.json, data/quality.json, data/render.json, data/vfx/{coreFace,plasmaFence,ballTrail,impact,screenShake}.json');
+console.log('OK  data/balance.json, data/quality.json, data/render.json, data/vfx/{coreFace,plasmaFence,ballTrail,impact,screenShake,explosion}.json');

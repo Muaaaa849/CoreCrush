@@ -1,0 +1,19 @@
+{
+  "$schema": "../../schemas/explosion.schema.json",
+  "fireball": {
+    "radiusM": 2.4,
+    "growSec": 0.1,
+    "lifeSec": 0.65,
+    "color": "#ff5a1a",
+    "coreColor": "#fff0c8",
+    "hdr": 1.6,
+    "flashHdr": 5,
+    "flashSec": 0.08
+  },
+  "rings": [
+    { "atFloor": true, "radiusM": 6, "widthMul": 0.05, "lifeSec": 0.5, "hdr": 1.6, "fill": 0.3, "color": "#ff8a3a" },
+    { "atFloor": false, "radiusM": 3.2, "widthMul": 0.07, "lifeSec": 0.32, "hdr": 2.0, "fill": 0.6, "color": "#ffd9a0" }
+  ],
+  "sparks": { "color": "#ffb060", "count": 200, "speedMps": 18, "speedJitter": 0.7, "spreadDeg": 360, "lifeSec": 0.8, "streakSec": 0.05, "hdr": 2.4, "gravityMps2": 9.8, "dragPerSec": 2.2 },
+  "debris": { "color": "#ff6a20", "count": 60, "speedMps": 10, "speedJitter": 0.6, "spreadDeg": 200, "lifeSec": 1.2, "streakSec": 0.08, "hdr": 0.9, "gravityMps2": 16, "dragPerSec": 0.8 }
+}
