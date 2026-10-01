@@ -32,7 +32,10 @@
         "smaa",
         "particleMul",
         "decorMul",
-        "floorReflection"
+        "floorReflection",
+        "lensFlare",
+        "edgeBlur",
+        "filmFx"
       ],
       "properties": {
         "pixelRatioMax": {
@@ -68,6 +71,18 @@
         },
         "floorReflection": {
           "description": "床の水たまりの平面反射（シーンをもう一度半解像度で描く）",
+          "type": "boolean"
+        },
+        "lensFlare": {
+          "description": "レンズフレア（ブルームが要る）",
+          "type": "boolean"
+        },
+        "edgeBlur": {
+          "description": "画面端のぼけ・色収差（全画面 1 パス＋10 サンプル）",
+          "type": "boolean"
+        },
+        "filmFx": {
+          "description": "グレイン・ライトリーク（グレーディングと同じパス。軽い）",
           "type": "boolean"
         }
       }

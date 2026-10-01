@@ -6,6 +6,7 @@
   "required": [
     "toneMappingExposure",
     "bloom",
+    "post",
     "stage"
   ],
   "properties": {
@@ -39,6 +40,319 @@
           "minimum": 0
         }
       }
+    },
+    "post": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "vignette",
+        "edgeBlur",
+        "chromaticAberration",
+        "grain",
+        "lensFlare",
+        "lightLeak",
+        "grade",
+        "dust"
+      ],
+      "properties": {
+        "vignette": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "amount",
+            "radius",
+            "softness"
+          ],
+          "properties": {
+            "amount": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "description": "端の暗さ（0=なし）"
+            },
+            "radius": {
+              "type": "number",
+              "minimum": 0,
+              "description": "暗くなり始める半径（縦の半分=1）"
+            },
+            "softness": {
+              "type": "number",
+              "minimum": 0
+            }
+          }
+        },
+        "edgeBlur": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "startR",
+            "maxPx"
+          ],
+          "properties": {
+            "startR": {
+              "type": "number",
+              "minimum": 0,
+              "description": "ぼけ始める半径（中心=照準は触らない）"
+            },
+            "maxPx": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 16
+            }
+          },
+          "description": "画面端のぼけ（高画質のみ。quality.edgeBlur）"
+        },
+        "chromaticAberration": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "startR",
+            "amountPx"
+          ],
+          "properties": {
+            "startR": {
+              "type": "number",
+              "minimum": 0
+            },
+            "amountPx": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 16
+            }
+          },
+          "description": "画面端だけの色収差（edgeBlur と同じパス）"
+        },
+        "grain": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "amount",
+            "shadowPow"
+          ],
+          "properties": {
+            "amount": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 0.2
+            },
+            "shadowPow": {
+              "type": "number",
+              "minimum": 0
+            }
+          },
+          "description": "フィルムグレイン。暗部ほど強い（quality.filmFx）"
+        },
+        "lensFlare": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "threshold",
+            "ghostSamples",
+            "ghostSpacing",
+            "ghostAttenuation",
+            "blurSigma",
+            "strength",
+            "tint"
+          ],
+          "properties": {
+            "threshold": {
+              "type": "number",
+              "minimum": 0
+            },
+            "ghostSamples": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 8
+            },
+            "ghostSpacing": {
+              "type": "number",
+              "minimum": 0
+            },
+            "ghostAttenuation": {
+              "type": "number",
+              "minimum": 0
+            },
+            "blurSigma": {
+              "type": "number",
+              "minimum": 0
+            },
+            "strength": {
+              "type": "number",
+              "minimum": 0
+            },
+            "tint": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}$"
+            }
+          },
+          "description": "ブルームから作るゴースト（quality.lensFlare）"
+        },
+        "lightLeak": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "color",
+            "amount",
+            "sizeR",
+            "speed"
+          ],
+          "properties": {
+            "color": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}$"
+            },
+            "amount": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 0.5
+            },
+            "sizeR": {
+              "type": "number",
+              "minimum": 0
+            },
+            "speed": {
+              "type": "number",
+              "minimum": 0
+            }
+          },
+          "description": "画面左上から差し込む暖色の光（quality.filmFx）"
+        },
+        "grade": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "slope",
+            "offset",
+            "power",
+            "saturation",
+            "contrast",
+            "shadowTint",
+            "highlightTint",
+            "splitAmount",
+            "halation"
+          ],
+          "properties": {
+            "slope": {
+              "type": "array",
+              "items": {
+                "type": "number",
+                "minimum": 0
+              },
+              "minItems": 3,
+              "maxItems": 3
+            },
+            "offset": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              },
+              "minItems": 3,
+              "maxItems": 3
+            },
+            "power": {
+              "type": "array",
+              "items": {
+                "type": "number",
+                "minimum": 0
+              },
+              "minItems": 3,
+              "maxItems": 3
+            },
+            "saturation": {
+              "type": "number",
+              "minimum": 0
+            },
+            "contrast": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "description": "S 字カーブの混ぜ量"
+            },
+            "shadowTint": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}$"
+            },
+            "highlightTint": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}$"
+            },
+            "splitAmount": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "halation": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "color",
+                "amount"
+              ],
+              "properties": {
+                "color": {
+                  "type": "string",
+                  "pattern": "^#[0-9a-fA-F]{6}$"
+                },
+                "amount": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                }
+              },
+              "description": "ブルームを暖色に寄せる量"
+            }
+          },
+          "description": "表示色（トーンマップ後）のカーブ。ASC CDL＋スプリットトーン"
+        },
+        "dust": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "count",
+            "sizePx",
+            "hdr",
+            "color",
+            "areaM",
+            "driftMps"
+          ],
+          "properties": {
+            "count": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 4000
+            },
+            "sizePx": {
+              "type": "number",
+              "minimum": 0
+            },
+            "hdr": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 0.95,
+              "description": "ブルームのしきい値未満（光らせない）"
+            },
+            "color": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}$"
+            },
+            "areaM": {
+              "type": "array",
+              "items": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              },
+              "minItems": 3,
+              "maxItems": 3
+            },
+            "driftMps": {
+              "type": "number",
+              "minimum": 0
+            }
+          },
+          "description": "空気中の塵（うっすら。数は quality.particleMul を掛ける）"
+        }
+      },
+      "description": "シネマティックなコンポジット（docs/research/graphics-compositing.md）"
     },
     "stage": {
       "type": "object",

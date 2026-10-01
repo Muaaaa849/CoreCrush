@@ -8,6 +8,7 @@ import type { QualityPreset } from './quality';
 import { Stage } from './stage';
 import { CoreFace } from '../vfx/coreFace';
 import { PlasmaFence } from '../vfx/plasmaFence';
+import { Dust } from './dust';
 
 export type FaceStage = 'smile' | 'nervous' | 'angry' | 'blink' | 'crack';
 
@@ -59,6 +60,7 @@ export class ProtoView {
   private prev: Snap = { px: [0, 0], pz: [0, 0], bx: 0, by: 0, bz: 0, bMode: '', bThrower: -1, bRally: 0 };
   private cur: Snap = { px: [0, 0], pz: [0, 0], bx: 0, by: 0, bz: 0, bMode: '', bThrower: -1, bRally: 0 };
   private readonly post: PostPipeline;
+  private readonly dust = new Dust(RENDER_LOOK.post.dust);
   backend = 'unknown';
   /** テクスチャ・モデルの読み込みが終わったら解決（撮影モードが待つ） */
   assetsReady: Promise<void> = Promise.resolve();
@@ -70,6 +72,7 @@ export class ProtoView {
     this.post = new PostPipeline(renderer, this.scene, this.camera, debugView);
     this.post.configure(quality);
     this.stage = new Stage(this.scene, b, RENDER_LOOK.stage, PLAYER_COLOR);
+    this.scene.add(this.dust.sprite);
 
     // プラズマ・フェンス（TSL。球の通過で波紋と閃光）
     this.fence = new PlasmaFence(b.court.widthM);
@@ -153,6 +156,7 @@ export class ProtoView {
   setQuality(preset: QualityPreset): void {
     this.post.configure(preset);
     this.stage.applyQuality(this.renderer, preset);
+    this.dust.applyQuality(preset.particleMul);
     for (const blob of this.playerBlobs) blob.visible = preset.shadowMapSize === 0;
   }
 

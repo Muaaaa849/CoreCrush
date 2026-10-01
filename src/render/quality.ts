@@ -17,6 +17,12 @@ export interface QualityPreset {
   floorReflection: boolean;
   particleMul: number;
   decorMul: number;
+  /** レンズフレア（ブルームが要る） */
+  lensFlare: boolean;
+  /** 画面端のぼけ・色収差 */
+  edgeBlur: boolean;
+  /** グレイン・ライトリーク */
+  filmFx: boolean;
 }
 
 export interface QualityConfig {

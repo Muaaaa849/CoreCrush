@@ -9,7 +9,10 @@
       "smaa": true,
       "particleMul": 1,
       "decorMul": 1,
-      "floorReflection": true
+      "floorReflection": true,
+      "lensFlare": true,
+      "edgeBlur": true,
+      "filmFx": true
     },
     "mid": {
       "pixelRatioMax": 1.5,
@@ -18,7 +21,10 @@
       "smaa": false,
       "particleMul": 0.5,
       "decorMul": 1,
-      "floorReflection": false
+      "floorReflection": false,
+      "lensFlare": false,
+      "edgeBlur": false,
+      "filmFx": true
     },
     "low": {
       "pixelRatioMax": 1,
@@ -27,7 +33,10 @@
       "smaa": false,
       "particleMul": 0.25,
       "decorMul": 0.5,
-      "floorReflection": false
+      "floorReflection": false,
+      "lensFlare": false,
+      "edgeBlur": false,
+      "filmFx": false
     }
   },
   "auto": {
