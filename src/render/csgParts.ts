@@ -173,3 +173,103 @@ export function buildPost(width: number, height: number): THREE.BufferGeometry {
   g.computeBoundingSphere();
   return g;
 }
+
+/** I 形鋼の弦材（箱から両脇の溝を引く）。長さ方向は z */
+function iBeam(w: number, h: number, len: number, pos: V3): THREE.BufferGeometry {
+  let b = box(w, h, len, pos);
+  const web = w * 0.22;
+  const flange = h * 0.16;
+  for (const s of [-1, 1]) b = op(b, box((w - web) / 2, h - flange * 2, len * 1.01, [pos[0] + s * (web / 2 + (w - web) / 4), pos[1], pos[2]]), SUBTRACTION);
+  return geom(b);
+}
+
+export interface TrussGeometry {
+  frame: THREE.BufferGeometry;
+  /** 投光器の筐体（中空の筒に放熱フィン） */
+  housing: THREE.BufferGeometry;
+  /** 投光器のレンズ（発光） */
+  lens: THREE.BufferGeometry;
+}
+
+/**
+ * 天井の照明トラス: 長さ方向（z）に伸びる箱形トラス 2 本＋横つなぎ、投光器の筐体。
+ * spans: 各トラスの x（m）。lights: [x, z, 狙う x, 狙う z]（投光器の位置と向き）。
+ */
+export function buildTruss(spans: number[], lengthM: number, yM: number, sizeM: number, lights: [number, number, number, number][]): TrussGeometry {
+  const frame: THREE.BufferGeometry[] = [];
+  const s = sizeM;
+  const chord = s * 0.14;
+  const half = lengthM / 2;
+  const bay = s * 1.2;
+  const strut = (a: THREE.Vector3, b: THREE.Vector3, t: number) => {
+    const d = b.clone().sub(a);
+    const g = new THREE.BoxGeometry(t, t, d.length());
+    g.deleteAttribute('uv');
+    const m = new THREE.Matrix4().lookAt(a, b, new THREE.Vector3(0, 1, 0));
+    m.setPosition(a.clone().add(b).multiplyScalar(0.5));
+    g.applyMatrix4(m);
+    return g;
+  };
+  for (const x of spans) {
+    for (const sx of [-1, 1]) for (const sy of [-1, 1]) frame.push(iBeam(chord, chord, lengthM, [x + (sx * s) / 2, yM + (sy * s) / 2, 0]));
+    // 斜材（2 側面と上下）
+    const n = Math.floor(lengthM / bay);
+    for (let i = 0; i < n; i++) {
+      const z0 = -half + i * bay;
+      const z1 = z0 + bay;
+      const flip = i % 2 === 0;
+      for (const sx of [-1, 1]) {
+        const xx = x + (sx * s) / 2;
+        frame.push(strut(new THREE.Vector3(xx, yM - s / 2, flip ? z0 : z1), new THREE.Vector3(xx, yM + s / 2, flip ? z1 : z0), chord * 0.45));
+      }
+      for (const sy of [-1, 1]) {
+        const yy = yM + (sy * s) / 2;
+        frame.push(strut(new THREE.Vector3(x - s / 2, yy, flip ? z0 : z1), new THREE.Vector3(x + s / 2, yy, flip ? z1 : z0), chord * 0.4));
+      }
+    }
+  }
+  // 横つなぎ（両端と中央）
+  if (spans.length > 1) {
+    const x0 = Math.min(...spans);
+    const x1 = Math.max(...spans);
+    for (const z of [-half + s / 2, 0, half - s / 2]) {
+      for (const sy of [-1, 1]) {
+        const g = new THREE.BoxGeometry(x1 - x0, chord, chord);
+        g.deleteAttribute('uv');
+        g.translate((x0 + x1) / 2, yM + (sy * s) / 2, z);
+        frame.push(g);
+      }
+    }
+  }
+  // 投光器: 筒 − 内側の筒（中空）＋背面のフィン、トラスの下に吊る
+  const housing: THREE.BufferGeometry[] = [];
+  const lens: THREE.BufferGeometry[] = [];
+  const r = s * 0.42;
+  for (const [x, z, tx, tz] of lights) {
+    const hy = yM - s / 2 - r * 1.1;
+    let can = cyl(r, r * 1.6, [0, 0, 0], [0, 0, 0], 20);
+    can = op(can, cyl(r * 0.82, r * 1.2, [0, -r * 0.45, 0], [0, 0, 0], 20), SUBTRACTION);
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * Math.PI;
+      can = op(can, box(r * 2.6, r * 0.12, r * 0.06, [0, r * 0.65, 0], [0, a, 0]), ADDITION);
+    }
+    // 下向き（-y）が光の向き。狙う点へ傾ける
+    const dir = new THREE.Vector3(tx - x, -hy, tz - z).normalize();
+    const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, -1, 0), dir);
+    const m = new THREE.Matrix4().compose(new THREE.Vector3(x, hy, z), q, new THREE.Vector3(1, 1, 1));
+    housing.push(geom(can).applyMatrix4(m));
+    const l = new THREE.CircleGeometry(r * 0.8, 20);
+    l.deleteAttribute('uv');
+    l.rotateX(Math.PI / 2);
+    l.translate(0, -r * 0.55, 0);
+    lens.push(l.applyMatrix4(m));
+    // 吊り金具
+    const g = new THREE.BoxGeometry(chord * 0.5, yM - s / 2 - hy, chord * 0.5);
+    g.deleteAttribute('uv');
+    g.translate(x, (yM - s / 2 + hy) / 2, z);
+    frame.push(g);
+  }
+  const out = { frame: merge(frame), housing: merge(housing), lens: merge(lens) };
+  for (const g of Object.values(out)) g.computeBoundingSphere();
+  return out;
+}

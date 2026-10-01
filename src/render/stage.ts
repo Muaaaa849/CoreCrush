@@ -13,7 +13,7 @@ import { Floor, type FloorLook } from './floor';
 import { Backdrop, type BackdropLook } from './backdrop';
 import { loadTexture } from './assets';
 import { Props, type FireLook, type PropGroup } from './props';
-import { buildPost } from './csgParts';
+import { buildPost, buildTruss } from './csgParts';
 import { Skyline, type SkylineLook } from './skyline';
 
 type Vec3 = [number, number, number];
@@ -27,6 +27,7 @@ export interface StageLook {
   floor: FloorLook;
   backdrop: BackdropLook;
   skyline: SkylineLook;
+  truss: { spansXM: number[]; lengthM: number; yM: number; sizeM: number; color: string; lensHdr: number; lensColor: string };
   floods: { color: string; intensity: number; angleDeg: number; penumbra: number; decay: number; rangeM: number; heightM: number; items: [number, number, number, number][] };
   props: PropGroup[];
   fire: FireLook;
@@ -109,6 +110,14 @@ export class Stage {
       l.castShadow = false;
       scene.add(l, l.target);
     }
+    const T = L.truss;
+    const tg = buildTruss(T.spansXM, T.lengthM, T.yM, T.sizeM, FL.items.map(([x, z, tx, tz]) => [x, z, tx, tz] as [number, number, number, number]));
+    const trussMat = new THREE.MeshStandardMaterial({ color: new THREE.Color(T.color), roughness: 0.45, metalness: 0.85 });
+    const frame = new THREE.Mesh(tg.frame, trussMat);
+    frame.castShadow = true;
+    const housing = new THREE.Mesh(tg.housing, trussMat);
+    const lens = new THREE.Mesh(tg.lens, new THREE.MeshBasicMaterial({ color: new THREE.Color(T.lensColor).multiplyScalar(T.lensHdr), side: THREE.DoubleSide }));
+    scene.add(frame, housing, lens);
 
     // --- 床（CC0 アスファルト＋水たまり＋平面反射。src/render/floor.ts） ---
     this.floor = new Floor(b, L.floor, L.lines, playerColors, 24);

@@ -374,7 +374,8 @@
         "fire",
         "fighter",
         "skyline",
-        "floods"
+        "floods",
+        "truss"
       ],
       "properties": {
         "background": {
@@ -1145,6 +1146,56 @@
                 "minItems": 4,
                 "maxItems": 4
               }
+            }
+          }
+        },
+        "truss": {
+          "description": "天井の照明トラスと投光器の筐体（csgParts.buildTruss）。投光器の位置は floods.items",
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "spansXM",
+            "lengthM",
+            "yM",
+            "sizeM",
+            "color",
+            "lensHdr",
+            "lensColor"
+          ],
+          "properties": {
+            "spansXM": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              },
+              "minItems": 1,
+              "maxItems": 4
+            },
+            "lengthM": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "yM": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "sizeM": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "color": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}$"
+            },
+            "lensHdr": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 4,
+              "description": "投光器のレンズの輝き（ブルーム・フレアの源。コアの顔より小さい面積）"
+            },
+            "lensColor": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}$"
             }
           }
         }
