@@ -1,6 +1,6 @@
 {
  "slug": "photoreal-arena",
- "current_step": "停止（プランナー判断待ち）: 10 回評価して中央値 58 で頭打ち",
+ "current_step": "終了（2026-10-01 プランナー判断: 現状のグラフィックで良し）。中央値 58 で停止",
  "completed": [
   "D4 調査メモ docs/research/graphics-compositing.md（出典 27）",
   "D5 post 一式（postPipeline.ts・dust.ts、quality の lensFlare/edgeBlur/filmFx）",
@@ -29,6 +29,10 @@
   {
    "what": "TPS の自分は不透明の人型（半透明 0.35 をやめる）",
    "why": "箱より細く前が見える。半透明は評価で安っぽいと指摘。プランナーのプレイテストで確認が要る"
+  },
+  {
+   "what": "コアの画面上の光の輪・光の柱を撤回",
+   "why": "プランナー: 相手コートで白飛びしてノイズ。見つけやすさは軌跡 VFX で担う"
   }
  ],
  "facts": [
@@ -50,7 +54,7 @@
   "撮影はソフトウェア WebGL2（WebGPU でない）。三角形はビル 20 棟で 2.0〜2.2M（上限 2.5M）",
   "自分の選手を不透明にした・頭上の三角／光の柱／光の輪を足した（読みやすさのため）→ プレイテストで確認が要る"
  ],
- "next_action": "プランナーに報告して判断を仰ぐ: (a) 本番キャラ（M4）を先にする (b) 撮影の球の位置を固定する (c) 目標を 60〜65 に見直す。再開は harnessctl activate photoreal-arena",
+ "next_action": "（ハーネスは使わない）M3 手順5 VFX へ。docs/progress.md の「次にやること」",
  "scores": [
   {
    "iter": 0,
