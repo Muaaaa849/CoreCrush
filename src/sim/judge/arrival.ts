@@ -60,7 +60,7 @@ export function resolveArrival(w: World): void {
   }
 
   // ラリーするほど当たったときの威力が上がる（リスクとリターンが一緒に上がる。プランナー 2026-10-01）
-  // OPEN: Q-32 上げ幅（仮 0.15）・上限・爆発への適用は提案 0004 で確認待ち
+  // 上限なし、爆発ダメージには掛けない（Q-32 回答・提案 0004）
   const dmg = b.throw.baseDamage * ball.powerMul * rallyDamageMul(b, ball.rally);
   r.hp -= dmg;
   setAction(r, 'hitReaction', b.hit.reactionF);
