@@ -10,6 +10,7 @@ import { CoreFace } from '../vfx/coreFace';
 import { PlasmaFence } from '../vfx/plasmaFence';
 import { BallTrail, BALL_TRAIL, trailColor } from '../vfx/ballTrail';
 import { ImpactFx } from '../vfx/impactFx';
+import { ScreenShake } from './screenShake';
 import { Dust } from './dust';
 import { buildFighter } from './csgParts';
 import { applySurfaceDetail } from './surfaceDetail';
@@ -62,6 +63,8 @@ export class ProtoView {
   private readonly fence: PlasmaFence;
   private readonly trail = new BallTrail();
   private readonly impact = new ImpactFx();
+  /** 画面揺れ（強度は設定から setShakeStrength で） */
+  private readonly shake = new ScreenShake();
   private readonly fxColor = new THREE.Color();
   private readonly balance: Balance;
   private readonly fenceTouchZ: number;
@@ -234,6 +237,11 @@ export class ProtoView {
     for (const blob of this.playerBlobs) blob.visible = preset.shadowMapSize === 0;
   }
 
+  /** 画面揺れの強度（設定 0〜100%） */
+  setShakeStrength(pct: number): void {
+    this.shake.strength = pct / 100;
+  }
+
   /** 描画解像度の倍率（CSS px あたりの描画 px）。変えたら resize を呼ぶ */
   setPixelRatio(r: number): void {
     this.renderer.setPixelRatio(r);
@@ -310,6 +318,10 @@ export class ProtoView {
         this.impact.play(e.kind, me.x + dx * f, b.player.chestHeightM, me.z + dz * f, dx, 0.15, dz, this.fxColor);
         break;
       }
+      case 'hit':
+        // 自分が被弾したときだけ揺らす（照準は変えない。描画用カメラだけ）
+        if (e.side === this.me) this.shake.trigger('hit', Math.max(this.lastTimeMs, 0) / 1000);
+        break;
       case 'roundStart':
         this.impact.clear();
         this.trail.clear();
@@ -424,6 +436,12 @@ export class ProtoView {
     this.camera.fov = cam.fov;
     this.camera.updateProjectionMatrix();
     this.camera.lookAt(cam.pos.x + f.x, cam.pos.y + f.y, cam.pos.z + f.z);
+    const sh = this.shake.sample(timeMs / 1000);
+    if (sh.right !== 0 || sh.up !== 0 || sh.roll !== 0) {
+      this.camera.translateX(sh.right);
+      this.camera.translateY(sh.up);
+      this.camera.rotateZ(sh.roll);
+    }
     // 軌跡は見えている球の位置（補間・外挿後）で積む。飛翔中だけ
     const flying = mode === 'flight' || mode === 'linear';
     const bp = this.ball.position;

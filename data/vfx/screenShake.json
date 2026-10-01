@@ -1,0 +1,8 @@
+{
+  "$schema": "../../schemas/screenShake.schema.json",
+  "defaultStrengthPct": 100,
+  "presets": {
+    "hit": { "durationSec": 0.15, "amplitudeM": 0.07, "rollDeg": 0.8, "freqHz": 28 },
+    "explosion": { "durationSec": 0.15, "amplitudeM": 0.1, "rollDeg": 1.0, "freqHz": 24 }
+  }
+}

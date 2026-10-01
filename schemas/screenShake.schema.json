@@ -1,0 +1,26 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CORE-CRUSH 画面揺れ（GDD 3.2: 被弾・爆発で最大 0.15 秒・小振幅。設定で 0〜100%）",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["defaultStrengthPct", "presets"],
+  "definitions": {
+    "preset": {
+      "type": "object", "additionalProperties": false, "required": ["durationSec", "amplitudeM", "rollDeg", "freqHz"],
+      "properties": {
+        "durationSec": { "description": "揺れの長さ（GDD 3.2 で最大 0.15 秒）", "type": "number", "exclusiveMinimum": 0, "maximum": 0.15 },
+        "amplitudeM": { "description": "カメラ位置の揺れ幅（小振幅）", "type": "number", "minimum": 0, "maximum": 0.2 },
+        "rollDeg": { "description": "視線を軸にした回転（照準の向きは変えない）", "type": "number", "minimum": 0, "maximum": 2 },
+        "freqHz": { "type": "number", "exclusiveMinimum": 0 }
+      }
+    }
+  },
+  "properties": {
+    "$schema": { "type": "string" },
+    "defaultStrengthPct": { "description": "設定の既定値（0〜100%）", "type": "number", "minimum": 0, "maximum": 100 },
+    "presets": {
+      "type": "object", "additionalProperties": false, "required": ["hit", "explosion"],
+      "properties": { "hit": { "$ref": "#/definitions/preset" }, "explosion": { "$ref": "#/definitions/preset" } }
+    }
+  }
+}

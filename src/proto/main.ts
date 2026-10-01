@@ -16,6 +16,7 @@ import { CameraRig, DEFAULT_CAMERA, type CameraSettings } from '../render/camera
 import { ProtoView, faceStage } from '../render/protoView';
 import { PerfStats, type PerfSummary } from '../render/perfStats';
 import { AutoResolution, QUALITY, parseQualitySetting, pixelRatioFor, resolveTier, type QualityTier } from '../render/quality';
+import { SCREEN_SHAKE } from '../render/screenShake';
 
 const QUALITY_LABEL: Record<QualityTier, string> = { high: '高', mid: '中', low: '低' };
 
@@ -167,6 +168,20 @@ async function main(): Promise<void> {
   const sens = $<HTMLInputElement>('sens');
   const fov = $<HTMLInputElement>('fov');
   const botSel = $<HTMLSelectElement>('bot');
+  // 画面揺れの強度（0〜100%。GDD 3.2）
+  const shakeIn = $<HTMLInputElement>('shake');
+  let shakePct = Math.min(Math.max(Number(store<number>('cc.shake', SCREEN_SHAKE.defaultStrengthPct)) || 0, 0), 100);
+  const syncShake = () => {
+    shakeIn.value = String(shakePct);
+    $('shakeOut').textContent = `${shakePct}%`;
+    view.setShakeStrength(shakePct);
+  };
+  syncShake();
+  shakeIn.addEventListener('input', () => {
+    shakePct = Number(shakeIn.value);
+    save('cc.shake', shakePct);
+    syncShake();
+  });
   const syncSettings = () => {
     sens.value = String(settings.sensitivity);
     $('sensOut').textContent = settings.sensitivity.toFixed(1);

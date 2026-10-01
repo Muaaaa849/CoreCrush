@@ -115,5 +115,10 @@ else {
   }
 }
 
+// 画面揺れ（GDD 3.2。長さ・振幅の上限はスキーマ）
+const shake = load('data/vfx/screenShake.json');
+const validateS = ajv.compile(load('schemas/screenShake.schema.json'));
+if (!validateS(shake)) for (const e of validateS.errors ?? []) fail(`vfx/screenShake.json${e.instancePath} ${e.message}`);
+
 if (failed) process.exit(1);
-console.log('OK  data/balance.json, data/quality.json, data/render.json, data/vfx/coreFace.json, data/vfx/plasmaFence.json, data/vfx/ballTrail.json, data/vfx/impact.json');
+console.log('OK  data/balance.json, data/quality.json, data/render.json, data/vfx/{coreFace,plasmaFence,ballTrail,impact,screenShake}.json');
