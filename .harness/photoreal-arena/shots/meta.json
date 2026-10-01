@@ -1,28 +1,28 @@
 {
  "views": {
   "front": {
-   "drawCalls": 113,
-   "triangles": 510123,
+   "drawCalls": 271,
+   "triangles": 2176001,
    "backend": "WebGL2"
   },
   "side": {
-   "drawCalls": 105,
-   "triangles": 505611,
+   "drawCalls": 249,
+   "triangles": 2042055,
    "backend": "WebGL2"
   },
   "corner": {
-   "drawCalls": 114,
-   "triangles": 510131,
+   "drawCalls": 272,
+   "triangles": 2176029,
    "backend": "WebGL2"
   },
   "fence": {
-   "drawCalls": 111,
-   "triangles": 459843,
+   "drawCalls": 267,
+   "triangles": 2028121,
    "backend": "WebGL2"
   },
   "back": {
-   "drawCalls": 103,
-   "triangles": 505591,
+   "drawCalls": 246,
+   "triangles": 2366956,
    "backend": "WebGL2"
   }
  },
