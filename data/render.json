@@ -154,7 +154,17 @@
       "grimeAmount": 0.35,
       "reflectPuddle": 0.8,
       "reflectDry": 0.12,
-      "reflectDistortion": 0.04
+      "reflectDistortion": 0.04,
+      "paint": {
+        "color": "#e8e4d8",
+        "widthM": 0.12,
+        "insetM": 0.9,
+        "circleM": 3.2,
+        "zoneCircleM": 2.2,
+        "wear": 0.35,
+        "albedo": 0.55
+      },
+      "macroScale": 0.13
     },
     "lines": {
       "widthM": 0.08,
@@ -428,7 +438,10 @@
         "wearScale": 9,
         "wearRoughness": 0.35
       },
-      "foeGlowHdr": 2.4
+      "foeGlowHdr": 2.4,
+      "clearcoat": 0.8,
+      "sheen": 0.5,
+      "weavePerM": 220
     },
     "skyline": {
       "count": 24,
@@ -545,9 +558,13 @@
     },
     "beacon": {
       "heightM": 7,
-      "radiusM": 0.32,
+      "radiusM": 0.45,
       "hdr": 1.1,
-      "opacity": 0.4
+      "opacity": 0.4,
+      "nearFadeM": [
+        5,
+        12
+      ]
     }
   }
 }

@@ -121,8 +121,8 @@ export function buildFighter(height: number): FighterGeometry {
     pad = op(pad, box(S(0.3), S(0.01), S(0.4), [sx * S(0.3), S(1.47), 0]), SUBTRACTION);
     paint.push(geom(pad));
     // 腕（上腕・前腕はスーツ、前腕に面取りした籠手）
-    suit.push(geom(brush(new THREE.CapsuleGeometry(S(0.055), S(0.26), 4, 12), [sx * S(0.31), S(1.24), 0])));
-    suit.push(geom(brush(new THREE.CapsuleGeometry(S(0.05), S(0.24), 4, 12), [sx * S(0.33), S(0.93), S(0.03)], [0.15, 0, 0])));
+    suit.push(geom(brush(new THREE.CapsuleGeometry(S(0.055), S(0.26), 6, 18), [sx * S(0.31), S(1.24), 0])));
+    suit.push(geom(brush(new THREE.CapsuleGeometry(S(0.05), S(0.24), 6, 18), [sx * S(0.33), S(0.93), S(0.03)], [0.15, 0, 0])));
     let bracer = chamferBox(S(0.12), S(0.2), S(0.12), S(0.03), [sx * S(0.33), S(0.95), S(0.03)]);
     bracer = op(bracer, box(S(0.14), S(0.012), S(0.14), [sx * S(0.33), S(0.98), S(0.03)]), SUBTRACTION);
     metal.push(geom(bracer));
@@ -130,8 +130,8 @@ export function buildFighter(height: number): FighterGeometry {
     // 手
     metal.push(geom(sphere(S(0.055), [sx * S(0.34), S(0.78), S(0.04)], [1, 1.2, 1], 12)));
     // 脚（太腿・脛はスーツ、膝当てと脛当て、ブーツ）
-    suit.push(geom(brush(new THREE.CapsuleGeometry(S(0.085), S(0.32), 4, 12), [sx * S(0.11), S(0.62), 0])));
-    suit.push(geom(brush(new THREE.CapsuleGeometry(S(0.07), S(0.3), 4, 12), [sx * S(0.11), S(0.27), 0])));
+    suit.push(geom(brush(new THREE.CapsuleGeometry(S(0.085), S(0.32), 6, 18), [sx * S(0.11), S(0.62), 0])));
+    suit.push(geom(brush(new THREE.CapsuleGeometry(S(0.07), S(0.3), 6, 18), [sx * S(0.11), S(0.27), 0])));
     let knee = sphere(S(0.075), [sx * S(0.11), S(0.44), S(0.05)], [1, 1.1, 0.8], 16);
     knee = op(knee, box(S(0.2), S(0.2), S(0.1), [sx * S(0.11), S(0.44), S(0.1)]), INTERSECTION);
     paint.push(geom(knee));
@@ -146,6 +146,51 @@ export function buildFighter(height: number): FighterGeometry {
     // 太腿の外の発光ライン
     glow.push(geom(box(S(0.006), S(0.2), S(0.03), [sx * S(0.193), S(0.64), 0])));
   }
+  // --- 細部: 腹の段の装甲、ベルトと物入れ、首の輪、ヘルメットの通気口とひれ、背中のケーブル、状態 LED ---
+  for (let i = 0; i < 2; i++) {
+    let ab = chamferBox(S(0.27 - i * 0.02), S(0.055), S(0.24), S(0.04), [0, S(1.06 - i * 0.065), 0]);
+    ab = op(ab, box(S(0.2), S(0.08), S(0.2), [0, S(1.06 - i * 0.065), 0]), SUBTRACTION);
+    paint.push(geom(ab));
+  }
+  let belt = chamferBox(S(0.36), S(0.045), S(0.25), S(0.06), [0, S(0.985), 0]);
+  belt = op(belt, box(S(0.3), S(0.06), S(0.19), [0, S(0.985), 0]), SUBTRACTION);
+  metal.push(geom(belt));
+  for (const sx of [-1, 1]) {
+    let pouch = chamferBox(S(0.08), S(0.09), S(0.06), S(0.015), [sx * S(0.12), S(0.95), S(-0.135)]);
+    pouch = op(pouch, box(S(0.09), S(0.006), S(0.08), [sx * S(0.12), S(0.975), S(-0.135)]), SUBTRACTION);
+    suit.push(geom(pouch));
+    // 太腿の外の装甲板
+    let thigh = chamferBox(S(0.05), S(0.22), S(0.15), S(0.02), [sx * S(0.185), S(0.64), 0]);
+    thigh = op(thigh, box(S(0.08), S(0.008), S(0.17), [sx * S(0.185), S(0.6), 0]), SUBTRACTION);
+    paint.push(geom(thigh));
+    // 背中のコアから肩へのケーブル（2 本）
+    for (const k of [0, 1]) {
+      const curve = new THREE.CatmullRomCurve3([
+        new THREE.Vector3(sx * S(0.06 + k * 0.04), S(1.46), S(-0.22)),
+        new THREE.Vector3(sx * S(0.13 + k * 0.03), S(1.55), S(-0.2)),
+        new THREE.Vector3(sx * S(0.22 + k * 0.02), S(1.5), S(-0.1)),
+      ]);
+      const tube = new THREE.TubeGeometry(curve, 12, S(0.013), 6, false);
+      tube.deleteAttribute('uv');
+      suit.push(tube);
+    }
+    // ヘルメットの耳の円盤
+    let ear = cyl(S(0.045), S(0.03), [sx * S(0.125), S(1.66), 0], [0, 0, Math.PI / 2], 18);
+    ear = op(ear, cyl(S(0.025), S(0.04), [sx * S(0.135), S(1.66), 0], [0, 0, Math.PI / 2], 14), SUBTRACTION);
+    metal.push(geom(ear));
+  }
+  // 首の輪
+  const collar = new THREE.TorusGeometry(S(0.085), S(0.018), 8, 24);
+  collar.deleteAttribute('uv');
+  collar.rotateX(Math.PI / 2);
+  collar.translate(0, S(1.53), 0);
+  metal.push(collar);
+  // ヘルメットの後ろの通気口と頭頂のひれ
+  let fin = chamferBox(S(0.02), S(0.05), S(0.16), S(0.008), [0, S(1.79), S(-0.02)]);
+  fin = op(fin, sphere(S(0.14), [0, S(1.66), 0], [0.92, 1.12, 1.05], 20), INTERSECTION);
+  paint.push(geom(fin));
+  // 状態 LED（背中の箱の上に 3 つ）
+  for (let i = 0; i < 3; i++) glow.push(geom(box(S(0.022), S(0.012), S(0.01), [S(-0.04 + i * 0.04), S(1.45), S(-0.232)])));
   const out = { paint: merge(paint), metal: merge(metal), suit: merge(suit), glow: merge(glow) };
   for (const g of Object.values(out)) {
     g.computeBoundingSphere();

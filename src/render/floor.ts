@@ -26,6 +26,10 @@ export interface FloorLook {
   reflectPuddle: number;
   reflectDry: number;
   reflectDistortion: number;
+  /** コートの塗装（白線・中央の円・陣地の円、剥げ）。光らない普通の塗料 */
+  paint: { color: string; widthM: number; insetM: number; circleM: number; zoneCircleM: number; wear: number; albedo: number };
+  /** タイリングを崩す 2 枚目の縮尺（1 枚目に対する倍率） */
+  macroScale: number;
 }
 
 /** 読み込み前の代わり（1×1）。読めたら value を差し替える */
@@ -44,6 +48,7 @@ export class Floor {
   private readonly baseEmissive: THREE.Node<'vec3'>;
   private readonly reflectEmissive: THREE.Node<'vec3'> | null;
   private reflectOn = false;
+  private macro: ReturnType<typeof texture> | null = null;
 
   constructor(b: Balance, L: FloorLook, lines: { widthM: number; hdr: number }, playerColors: readonly [number, number], extentM: number) {
     const W = b.court.widthM;
@@ -60,9 +65,25 @@ export class Floor {
     const grime = mx_fractal_noise_float(vec3(p.mul(L.grimeScale), 3.7), 3, 2, 0.5).mul(L.grimeAmount).add(1);
 
     const mat = new THREE.MeshStandardNodeMaterial({ metalness: L.metalness });
-    const albedo = this.diff.rgb.mul(color(L.tint)).mul(L.albedoMul).mul(grime);
-    mat.colorNode = mix(albedo, albedo.mul(L.puddleDarken), puddle);
-    mat.roughnessNode = mix(this.rough.r.mul(L.roughnessMul), float(L.roughnessMin), puddle);
+    // 同じテクスチャを別の縮尺で重ねて繰り返しを崩す
+    const macro = texture(this.diff.value, uv.mul(L.macroScale).add(vec2(0.37, 0.71)));
+    this.macro = macro;
+    const albedo = this.diff.rgb.mul(macro.r.mul(1.1).add(0.45)).mul(color(L.tint)).mul(L.albedoMul).mul(grime);
+    // コートの塗装: 内側の白線、中央の円、各陣地の円。剥げはノイズで
+    const P = L.paint;
+    const pw = float(P.widthM * 0.5);
+    const inX = abs(abs(positionWorld.x).sub(W / 2 - P.insetM));
+    const inZ = abs(abs(positionWorld.z).sub(D - P.insetM));
+    const box = min(select(abs(positionWorld.z).lessThan(D - P.insetM + P.widthM), inX, float(1e3)), select(abs(positionWorld.x).lessThan(W / 2 - P.insetM + P.widthM), inZ, float(1e3)));
+    const circ = abs(p.length().sub(P.circleM));
+    const zone = abs(vec2(positionWorld.x, abs(positionWorld.z).sub(D / 2)).length().sub(P.zoneCircleM));
+    const pd = min(min(box, circ), zone);
+    const paa = max(fwidth(pd), 1e-4);
+    const wearN = mx_fractal_noise_float(vec3(p.mul(1.7), 9.1), 3, 2, 0.5);
+    const paintMask = float(1).sub(smoothstep(pw.sub(paa), pw.add(paa), pd)).mul(smoothstep(P.wear - 0.15, P.wear + 0.15, wearN.add(0.5)));
+    const dryCol = mix(albedo, color(P.color).mul(P.albedo).mul(grime), paintMask);
+    mat.colorNode = mix(dryCol, dryCol.mul(L.puddleDarken), puddle);
+    mat.roughnessNode = mix(mix(this.rough.r.mul(L.roughnessMul), float(0.45), paintMask), float(L.roughnessMin), puddle);
     mat.normalNode = normalMap(this.nor, vec2(mix(float(L.normalScale), float(0.05), puddle)));
 
     // 外周のネオンライン（自陣の色、fwidth でアンチエイリアス）
@@ -106,7 +127,10 @@ export class Floor {
   }
 
   setTextures(diff: THREE.Texture | null, nor: THREE.Texture | null, rough: THREE.Texture | null): void {
-    if (diff) this.diff.value = diff;
+    if (diff) {
+      this.diff.value = diff;
+      if (this.macro) this.macro.value = diff;
+    }
     if (nor) this.nor.value = nor;
     if (rough) this.rough.value = rough;
   }

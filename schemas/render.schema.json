@@ -560,7 +560,9 @@
             "grimeAmount",
             "reflectPuddle",
             "reflectDry",
-            "reflectDistortion"
+            "reflectDistortion",
+            "paint",
+            "macroScale"
           ],
           "properties": {
             "tileM": {
@@ -632,6 +634,55 @@
               "maximum": 1
             },
             "reflectDistortion": {
+              "type": "number",
+              "minimum": 0
+            },
+            "paint": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "color",
+                "widthM",
+                "insetM",
+                "circleM",
+                "zoneCircleM",
+                "wear",
+                "albedo"
+              ],
+              "properties": {
+                "color": {
+                  "type": "string",
+                  "pattern": "^#[0-9a-fA-F]{6}$"
+                },
+                "widthM": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "insetM": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "circleM": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "zoneCircleM": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "wear": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                },
+                "albedo": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                }
+              }
+            },
+            "macroScale": {
               "type": "number",
               "minimum": 0
             }
@@ -1004,7 +1055,10 @@
             "suitColor",
             "glowHdr",
             "detail",
-            "foeGlowHdr"
+            "foeGlowHdr",
+            "clearcoat",
+            "sheen",
+            "weavePerM"
           ],
           "properties": {
             "paintBase": {
@@ -1092,6 +1146,22 @@
               "minimum": 0,
               "maximum": 3,
               "description": "相手の発光ライン（ブルームで輪郭が浮く。コアの顔より暗く）"
+            },
+            "clearcoat": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "sheen": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "description": "スーツの布の照り（チーム色に掛ける）"
+            },
+            "weavePerM": {
+              "type": "number",
+              "minimum": 0,
+              "description": "スーツの織り目の細かさ（1/m）"
             }
           }
         },
@@ -1433,7 +1503,8 @@
             "heightM",
             "radiusM",
             "hdr",
-            "opacity"
+            "opacity",
+            "nearFadeM"
           ],
           "properties": {
             "heightM": {
@@ -1453,6 +1524,16 @@
               "type": "number",
               "minimum": 0,
               "maximum": 1
+            },
+            "nearFadeM": {
+              "type": "array",
+              "items": {
+                "type": "number",
+                "minimum": 0
+              },
+              "minItems": 2,
+              "maxItems": 2,
+              "description": "カメラからこの距離（m）の間で現れる（近くでは自分に重ならない）"
             }
           }
         }

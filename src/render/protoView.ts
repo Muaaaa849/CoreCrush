@@ -2,7 +2,7 @@
 import * as THREE from 'three/webgpu';
 import type { Balance } from '../sim/balance';
 import type { Player, SimEvent, World } from '../sim/types';
-import { clamp, color, dot, float, normalView, positionLocal, positionViewDirection, select, smoothstep, uniform, uv } from 'three/tsl';
+import { clamp, color, dot, float, fract, normalView, positionLocal, positionView, positionViewDirection, select, smoothstep, uniform, uv } from 'three/tsl';
 import { PostPipeline, RENDER_LOOK, type PostDebugView } from './postPipeline';
 import type { QualityPreset } from './quality';
 import { Stage } from './stage';
@@ -104,13 +104,17 @@ export class ProtoView {
       const rim = uniform(0);
       const fres = float(1).sub(clamp(dot(normalView, positionViewDirection), 0, 1)).pow(rimLook.power);
       const rimNode = color(PLAYER_COLOR[side]).mul(fres).mul(rim);
-      const paint = new THREE.MeshStandardNodeMaterial({ color: team.clone().lerp(new THREE.Color(F.paintBase), F.paintMix), roughness: F.paintRoughness, metalness: F.paintMetalness });
+      // 塗装: クリアコート（車の塗装のような上塗りの艶）
+      const paint = new THREE.MeshPhysicalNodeMaterial({ color: team.clone().lerp(new THREE.Color(F.paintBase), F.paintMix), roughness: F.paintRoughness, metalness: F.paintMetalness, clearcoat: F.clearcoat, clearcoatRoughness: 0.12 });
       applySurfaceDetail(paint, paint.color, F.paintRoughness, F.detail);
       paint.emissiveNode = rimNode;
       const metal = new THREE.MeshStandardNodeMaterial({ color: new THREE.Color(F.metalColor), roughness: F.metalRoughness, metalness: 0.9 });
       applySurfaceDetail(metal, metal.color, F.metalRoughness, F.detail);
       metal.emissiveNode = rimNode;
-      const suit = new THREE.MeshStandardNodeMaterial({ color: new THREE.Color(F.suitColor), roughness: 0.85, metalness: 0 });
+      // スーツ: 布（シーン＝布の縁の柔らかい照り）と細かい織り目
+      const suit = new THREE.MeshPhysicalNodeMaterial({ color: new THREE.Color(F.suitColor), roughness: 0.85, metalness: 0, sheen: 1, sheenRoughness: 0.5, sheenColor: team.clone().multiplyScalar(F.sheen) });
+      const weave = fract(positionLocal.x.add(positionLocal.y).mul(F.weavePerM)).sub(0.5).abs().add(fract(positionLocal.z.sub(positionLocal.y).mul(F.weavePerM)).sub(0.5).abs());
+      suit.colorNode = color(F.suitColor).mul(weave.mul(0.35).add(0.82));
       suit.emissiveNode = rimNode;
       // 発光ライン（行動の合図の色もここ。tint() が emissive を変える）
       const mat = new THREE.MeshStandardNodeMaterial({ color: 0x000000, emissive: PLAYER_COLOR[side], emissiveIntensity: F.glowHdr, roughness: 0.4 });
@@ -167,9 +171,11 @@ export class ProtoView {
     this.beaconMat = new THREE.MeshBasicNodeMaterial({ transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide });
     this.beaconColor = uniform(new THREE.Color(1, 1, 1)) as unknown as { value: THREE.Color } & THREE.Node<"color">;
     const fade = float(1).sub(positionLocal.y.div(BC.heightM)).pow(2);
-    const edge = float(1).sub(clamp(dot(normalView, positionViewDirection).abs(), 0, 1)).pow(1.5).oneMinus().mul(0.7).add(0.3);
+    // 柱の芯が明るく縁はぼかす（板に見えないように）、カメラの近くでは消す（自分に重ならない）
+    const core = clamp(dot(normalView, positionViewDirection).abs(), 0, 1).pow(2.5);
+    const near = smoothstep(BC.nearFadeM[0], BC.nearFadeM[1], positionView.z.negate());
     this.beaconMat.colorNode = this.beaconColor.mul(BC.hdr);
-    this.beaconMat.opacityNode = fade.mul(edge).mul(BC.opacity);
+    this.beaconMat.opacityNode = fade.mul(core).mul(near).mul(BC.opacity);
     this.beacon = new THREE.Mesh(beaconGeo, this.beaconMat);
     this.beacon.visible = false;
     this.scene.add(this.beacon);
