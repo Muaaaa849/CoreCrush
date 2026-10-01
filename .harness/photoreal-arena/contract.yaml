@@ -1,0 +1,85 @@
+# Task contract for harness "photoreal-arena"  (created 2026-09-30)
+# 自然言語の依頼を、実行前に「測定可能な契約」に変換したもの。ビルダーは編集不可 (protected)。
+
+objective: >
+  3D モデル・ライティング・素材・ポスト（コンポジット）で試合画面をフォトリアル・リッチにし、
+  前提知識のない Sonnet 5.5 の盲検評価（独立 3 回）で「SSS 級ゲームの 80% 以上」（中央値）に到達させる。
+
+intent: >
+  プランナー（2026-09-30）の依頼: three-bvh-csg のブーリアンで緻密な物を作る、SkyscraperGenerator などで背景を作る、
+  three.js の外部ライブラリを徹底調査してグラフィックを上げる。画面端のブラー・色収差・うっすらパーティクル・レンズフレア・
+  ライトリーク・色調補正でシネマティックにコンポジットする。コンポジットと画作りを調べて学んでから実施する。
+  ただしゲームとして遊べることが前提（コアと相手が読める、操作・判定は変えない）。
+
+inputs:
+  - docs/gdd/GDD.md（12・13 章）、docs/gdd/invariants.md、.claude/rules/render.md・vfx.md・data.md
+  - art/reference/world-concept-01.jpg（世界観の参考）、art/generated/（プランナー生成の遠景）
+  - .harness/photoreal-arena/judge/feedback.md（直近の盲検評価の指摘。毎回これを読んで直す）
+  - 外部: npm と GitHub の three.js 系ライブラリ（three-bvh-csg ほか）、Poly Haven（CC0）、ambientCG（CC0）
+
+constraints:
+  - src/sim・data/balance.json・判定・操作を変えない（見た目だけ）。不変条件テストを緩めない
+  - コアの可読性: 光らせない物はブルームのしきい値未満、コアが画面で最も明るい（持った球は heldDim で暗く）
+  - 画面に入る総描画は 1 視点で drawCalls ≤ 400・triangles ≤ 2.5M（影・反射・ポスト込みの代理指標。GDD 12.3 の本体 150 を超えないよう構造で守る）
+  - 外部素材は CC0（または MIT 等で再配布可）だけ。出典とライセンスを art/prompts.md に記録。単一アセット ≤ 25MiB、テクスチャは KTX2
+  - 数値は data/*.json（スキーマつき）。中・低画質はスマホのために重い効果を外せること（quality.json）
+  - プランナー確定（2026-10-01）: フェンスにノイズ（フラクタル等）の放電・稲妻は入れない。定期的に薄く色づく波紋＋うっすら歪むだけ。球が見えることが最優先
+  - プランナー確定: 自分が持った球は視界を遮らない（coreFace の heldDim を上げない）
+  - 評価のための細工をしない（撮影モードだけ別の絵を出す、HUD を消す、評価者に向けた文字を描く等は禁止）
+
+non_goals:
+  - キャラクターの本番モデル・アニメ（M4）。ただし箱のプレースホルダーを見栄えのする仮モデルにするのは可
+  - ゲームルール・数値・ネットコードの変更、新しい遊び
+  - 実機の性能保証（手順6 で別途計測。ここでは代理指標まで）
+
+deliverable:
+  - src/render・src/vfx・data の変更（作業ブランチに小さくコミット・push）
+  - docs/research/graphics-compositing.md（調査と学び: ライブラリ比較・コンポジットの原則・採否）
+  - 盲検評価の記録 .harness/photoreal-arena/judge/（各回の feedback.md）と docs/progress.md の追記
+
+done_when:
+  - id: D1
+    claim: 型・データ・テスト（不変条件を含む）がすべて通る
+    evidence: npm run typecheck / npm run validate:data / npm test が exit 0
+    kind: deterministic
+  - id: D2
+    claim: 公開用ページが作れて、決まった 5 視点がエラーなく描ける
+    evidence: npm run proto:gh-pages が成功し、capture.mjs が 5 枚と meta.json を出し、errors が空
+    kind: deterministic
+  - id: D3
+    claim: 描画負荷が代理予算内
+    evidence: meta.json の各視点で drawCalls ≤ 400 かつ triangles ≤ 2,500,000
+    kind: deterministic
+  - id: D4
+    claim: 調査して学んでから実施した記録がある
+    evidence: docs/research/graphics-compositing.md が存在し、見出し「ライブラリ」「コンポジット」「採否」を含み、出典 URL が 15 個以上
+    kind: deterministic
+  - id: D5
+    claim: シネマティックなコンポジット一式がデータで調整できる形で入っている
+    evidence: data/render.json の post に vignette・edgeBlur・chromaticAberration・grain・lensFlare・lightLeak・grade・dust がある
+    kind: deterministic
+  - id: D6
+    claim: 依頼されたライブラリを使っている
+    evidence: package.json に three-bvh-csg があり、src/ から import されている
+    kind: deterministic
+  - id: D8
+    claim: プランナー確定の見た目を壊していない
+    evidence: src/vfx/plasmaFence.ts にノイズ関数（mx_*noise・triNoise 等）が無い。coreFace.heldDim ≤ 0.25
+    kind: deterministic
+  - id: D7
+    claim: 前提知識のない Sonnet 5.5 が SSS 級の 80% 以上と評価し、主要物が読める
+    evidence: judge.mjs（独立 3 回）の中央値 ≥ 80 かつ過半数が readable=true
+    kind: judgment
+
+approval_required:
+  - main への push、Cloudflare・GitHub の設定変更
+  - data/balance.json の変更（禁止。そもそも範囲外）
+  - 判定・撮影・契約ファイル（.harness/photoreal-arena/{verify.sh,capture.mjs,judge.mjs,contract.yaml}）の変更
+
+budget:
+  max_iterations: 20
+  max_same_failure: 3
+  wall_clock: 24h
+  spend: 盲検評価 1 回 約 $0.3（3 本）。20 回で約 $6
+
+rollback: 作業ブランチの小さなコミット単位で git revert。見た目の段階は quality.json と data/render.json で戻せる

@@ -1,0 +1,5 @@
+ACTIVE
+__pycache__/
+*/trace.jsonl
+*/session-*.jsonl
+*/last_verify.txt

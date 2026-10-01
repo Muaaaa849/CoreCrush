@@ -1,0 +1,20 @@
+{
+ "slug": "photoreal-arena",
+ "current_step": "ハーネス作成済み・未起動",
+ "completed": [],
+ "decisions": [
+  {
+   "what": "フェンスはノイズ無し・薄い帯の波紋＋うっすら歪むだけ",
+   "why": "プランナー確定 2026-10-01（球が見えない）"
+  }
+ ],
+ "facts": [
+  "基準の盲検評価（2026-09-30、フェンス変更前）: 34/36/38 中央値 36、readable 0/3。主な指摘: 一人称の箱（自キャラ）がプロトタイプ然、背景が平面の書き割り、光がフラット、ポスト・色調補正の不足、球と相手が小さく読めない",
+  "verify.sh 1 回 約 8〜10 分（ビルド 1 分・撮影 4〜5 分・評価 0.5 分）、評価 約 $0.3",
+  "撮影はヘッドレス Chromium の WebGL2（ソフトウェア描画）。実機の WebGPU とは見え方が少し違う",
+  "球の大きさ（balance.json ball.radiusM=0.2）は変えられない。可読性は発光・軌跡・コントラストで上げる"
+ ],
+ "artifacts": [],
+ "open_risks": [],
+ "next_action": "prompt.md の『最初の一手』1: docs/research/graphics-compositing.md を書く（D4）"
+}

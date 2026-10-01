@@ -1,0 +1,30 @@
+{
+ "views": {
+  "front": {
+   "drawCalls": 113,
+   "triangles": 510123,
+   "backend": "WebGL2"
+  },
+  "side": {
+   "drawCalls": 105,
+   "triangles": 505611,
+   "backend": "WebGL2"
+  },
+  "corner": {
+   "drawCalls": 114,
+   "triangles": 510131,
+   "backend": "WebGL2"
+  },
+  "fence": {
+   "drawCalls": 111,
+   "triangles": 459843,
+   "backend": "WebGL2"
+  },
+  "back": {
+   "drawCalls": 103,
+   "triangles": 505591,
+   "backend": "WebGL2"
+  }
+ },
+ "errors": []
+}

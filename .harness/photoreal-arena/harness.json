@@ -1,0 +1,25 @@
+{
+  "gate": "stop",
+  "verify_cmd": "bash .harness/{slug}/verify.sh",
+  "verify_timeout_sec": 1800,
+  "max_iterations": 20,
+  "max_same_failure": 3,
+  "extra_protected_paths": [
+    ".harness/photoreal-arena/capture.mjs",
+    ".harness/photoreal-arena/judge.mjs",
+    ".harness/photoreal-arena/judge/",
+    "tests/",
+    "data/balance.json",
+    "schemas/balance.schema.json",
+    "src/sim/"
+  ],
+  "extra_deny_commands": [
+    "git push origin main",
+    "git push --force",
+    "git reset --hard"
+  ],
+  "extra_ask_commands": [
+    "wrangler",
+    "gh "
+  ]
+}
