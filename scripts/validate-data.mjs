@@ -102,5 +102,18 @@ else {
   for (const k of Object.keys(balance.throw.types)) if (!(k in trail.colors)) fail(`ballTrail.colors に球種 ${k} がない`);
 }
 
+// キャッチ・跳ね返し・フェンス通過の演出（GDD 13）
+const impact = load('data/vfx/impact.json');
+const validateI = ajv.compile(load('schemas/impact.schema.json'));
+if (!validateI(impact)) for (const e of validateI.errors ?? []) fail(`vfx/impact.json${e.instancePath} ${e.message}`);
+else {
+  // VFX はコアの可読性を下げない: 輪・火花はコアの顔より暗く
+  for (const [id, p] of Object.entries(impact.presets)) {
+    for (const r of p.rings) if (r.hdr >= face.faceHdr) fail(`impact.presets.${id}.rings.hdr(${r.hdr}) がコアの顔(${face.faceHdr}) 以上`);
+    if (p.sparks.hdr >= face.faceHdr) fail(`impact.presets.${id}.sparks.hdr(${p.sparks.hdr}) がコアの顔(${face.faceHdr}) 以上`);
+    if (p.sparks.count > impact.sparkPool) fail(`impact.presets.${id}.sparks.count がプールより多い`);
+  }
+}
+
 if (failed) process.exit(1);
-console.log('OK  data/balance.json, data/quality.json, data/render.json, data/vfx/coreFace.json, data/vfx/plasmaFence.json, data/vfx/ballTrail.json');
+console.log('OK  data/balance.json, data/quality.json, data/render.json, data/vfx/coreFace.json, data/vfx/plasmaFence.json, data/vfx/ballTrail.json, data/vfx/impact.json');

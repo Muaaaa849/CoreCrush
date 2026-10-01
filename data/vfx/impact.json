@@ -1,0 +1,32 @@
+{
+  "$schema": "../../schemas/impact.schema.json",
+  "sparkPool": 384,
+  "ringPool": 8,
+  "sparkWidthM": 0.035,
+  "sparkMinWidthPx": 1.5,
+  "presets": {
+    "catch": {
+      "color": "#bdf6ff",
+      "rings": [{ "radiusM": 1.1, "widthMul": 0.07, "lifeSec": 0.28, "hdr": 1.1, "fill": 0.25 }],
+      "sparks": { "count": 26, "speedMps": 7, "speedJitter": 0.6, "spreadDeg": 70, "lifeSec": 0.32, "streakSec": 0.035, "hdr": 1.8, "gravityMps2": 9.8, "dragPerSec": 3 }
+    },
+    "justCatch": {
+      "color": "#ffe27a",
+      "rings": [
+        { "radiusM": 1.25, "widthMul": 0.06, "lifeSec": 0.36, "hdr": 1.6, "fill": 0.35 },
+        { "radiusM": 0.75, "widthMul": 0.09, "lifeSec": 0.22, "hdr": 2.0, "fill": 0 }
+      ],
+      "sparks": { "count": 60, "speedMps": 11, "speedJitter": 0.6, "spreadDeg": 110, "lifeSec": 0.45, "streakSec": 0.045, "hdr": 2.4, "gravityMps2": 9.8, "dragPerSec": 2.5 }
+    },
+    "parry": {
+      "color": "trail",
+      "rings": [{ "radiusM": 1.2, "widthMul": 0.05, "lifeSec": 0.24, "hdr": 1.4, "fill": 0.15 }],
+      "sparks": { "count": 40, "speedMps": 14, "speedJitter": 0.5, "spreadDeg": 45, "lifeSec": 0.3, "streakSec": 0.04, "hdr": 2.2, "gravityMps2": 6, "dragPerSec": 3.5 }
+    },
+    "fenceCross": {
+      "color": "trail",
+      "rings": [{ "radiusM": 0.8, "widthMul": 0.12, "lifeSec": 0.18, "hdr": 0.9, "fill": 0.6 }],
+      "sparks": { "count": 10, "speedMps": 4, "speedJitter": 0.7, "spreadDeg": 180, "lifeSec": 0.22, "streakSec": 0.03, "hdr": 1.2, "gravityMps2": 9.8, "dragPerSec": 4 }
+    }
+  }
+}

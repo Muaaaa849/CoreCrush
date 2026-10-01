@@ -1,0 +1,58 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CORE-CRUSH キャッチ・跳ね返し・フェンス通過の演出（GDD 13）。衝撃波リング＋火花。全てプール（試合中に new しない）",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["sparkPool", "ringPool", "sparkWidthM", "sparkMinWidthPx", "presets"],
+  "definitions": {
+    "hdr": { "description": "HDR 輝度。コアの顔（faceHdr）より暗く（validate-data で検査）", "type": "number", "minimum": 0 },
+    "preset": {
+      "type": "object", "additionalProperties": false, "required": ["color", "rings", "sparks"],
+      "properties": {
+        "color": { "description": "色。\"trail\" はその球の軌跡の色（球種・ラリー）", "type": "string", "pattern": "^(#[0-9a-fA-F]{6}|trail)$" },
+        "rings": {
+          "type": "array", "maxItems": 2,
+          "items": {
+            "type": "object", "additionalProperties": false, "required": ["radiusM", "widthMul", "lifeSec", "hdr", "fill"],
+            "properties": {
+              "radiusM": { "description": "広がりきった半径", "type": "number", "exclusiveMinimum": 0 },
+              "widthMul": { "description": "輪の太さ（半径に対する割合）", "type": "number", "exclusiveMinimum": 0, "maximum": 1 },
+              "lifeSec": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 },
+              "hdr": { "$ref": "#/definitions/hdr" },
+              "fill": { "description": "出始めの閃光（円の内側の明るさ。輪の hdr に対する割合）", "type": "number", "minimum": 0, "maximum": 1 }
+            }
+          }
+        },
+        "sparks": {
+          "type": "object", "additionalProperties": false,
+          "required": ["count", "speedMps", "speedJitter", "spreadDeg", "lifeSec", "streakSec", "hdr", "gravityMps2", "dragPerSec"],
+          "properties": {
+            "count": { "description": "高画質の粒数（画質の particleMul を掛ける）", "type": "integer", "minimum": 0, "maximum": 200 },
+            "speedMps": { "type": "number", "minimum": 0 },
+            "speedJitter": { "description": "速さのばらつき（0〜1）", "type": "number", "minimum": 0, "maximum": 1 },
+            "spreadDeg": { "description": "噴き出す向きの広がり（円錐の全角）", "type": "number", "minimum": 0, "maximum": 360 },
+            "lifeSec": { "type": "number", "exclusiveMinimum": 0, "maximum": 1.2 },
+            "streakSec": { "description": "火花の尾の長さ（速度×秒）", "type": "number", "minimum": 0 },
+            "hdr": { "$ref": "#/definitions/hdr" },
+            "gravityMps2": { "type": "number", "minimum": 0 },
+            "dragPerSec": { "type": "number", "minimum": 0 }
+          }
+        }
+      }
+    }
+  },
+  "properties": {
+    "$schema": { "type": "string" },
+    "sparkPool": { "description": "火花の上限（頂点バッファの大きさ）。超えたら古いものから使い回す", "type": "integer", "minimum": 16, "maximum": 4096 },
+    "ringPool": { "description": "衝撃波リングの上限", "type": "integer", "minimum": 1, "maximum": 16 },
+    "sparkWidthM": { "type": "number", "exclusiveMinimum": 0 },
+    "sparkMinWidthPx": { "description": "遠くの火花の幅の下限（CSS px）", "type": "number", "minimum": 0 },
+    "presets": {
+      "type": "object", "additionalProperties": false, "required": ["catch", "justCatch", "parry", "fenceCross"],
+      "properties": {
+        "catch": { "$ref": "#/definitions/preset" }, "justCatch": { "$ref": "#/definitions/preset" },
+        "parry": { "$ref": "#/definitions/preset" }, "fenceCross": { "$ref": "#/definitions/preset" }
+      }
+    }
+  }
+}

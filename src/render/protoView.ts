@@ -8,7 +8,8 @@ import type { QualityPreset } from './quality';
 import { Stage } from './stage';
 import { CoreFace } from '../vfx/coreFace';
 import { PlasmaFence } from '../vfx/plasmaFence';
-import { BallTrail } from '../vfx/ballTrail';
+import { BallTrail, BALL_TRAIL, trailColor } from '../vfx/ballTrail';
+import { ImpactFx } from '../vfx/impactFx';
 import { Dust } from './dust';
 import { buildFighter } from './csgParts';
 import { applySurfaceDetail } from './surfaceDetail';
@@ -60,6 +61,9 @@ export class ProtoView {
   private readonly face = new CoreFace();
   private readonly fence: PlasmaFence;
   private readonly trail = new BallTrail();
+  private readonly impact = new ImpactFx();
+  private readonly fxColor = new THREE.Color();
+  private readonly balance: Balance;
   private readonly fenceTouchZ: number;
   private lastTimeMs = -1;
   private ballShadow: THREE.Mesh;
@@ -79,6 +83,7 @@ export class ProtoView {
 
   private constructor(renderer: THREE.WebGPURenderer, b: Balance, quality: QualityPreset, debugView: PostDebugView) {
     this.renderer = renderer;
+    this.balance = b;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = RENDER_LOOK.toneMappingExposure;
     this.post = new PostPipeline(renderer, this.scene, this.camera, debugView);
@@ -142,6 +147,7 @@ export class ProtoView {
     this.ball.add(this.face.light);
     // 軌跡（球種で色分け、ラリーで濃くなる）
     this.scene.add(this.trail.mesh);
+    this.scene.add(this.impact.group);
     this.ballShadow = new THREE.Mesh(new THREE.CircleGeometry(b.ball.radiusM * 1.2, 24), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.5 }));
     this.ballShadow.rotation.x = -Math.PI / 2;
     this.scene.add(this.ballShadow);
@@ -224,6 +230,7 @@ export class ProtoView {
     this.stage.applyQuality(this.renderer, preset);
     this.dust.applyQuality(preset.particleMul);
     this.trail.applyQuality(preset.particleMul);
+    this.impact.applyQuality(preset.particleMul);
     for (const blob of this.playerBlobs) blob.visible = preset.shadowMapSize === 0;
   }
 
@@ -278,7 +285,36 @@ export class ProtoView {
 
   /** sim のイベント（演出だけ。sim は書き換えない） */
   onSimEvent(e: SimEvent, w: World): void {
-    if (e.kind === 'cross') this.fence.cross(w.ball.pos.x, w.ball.pos.y);
+    const ball = w.ball;
+    trailColor(BALL_TRAIL, ball.kind, ball.rally, this.fxColor);
+    switch (e.kind) {
+      case 'cross': {
+        this.fence.cross(ball.pos.x, ball.pos.y);
+        // 通過の閃光（フェンスの面に沿って。放電・稲妻は入れない）。進む向きは投げ手のコートから相手のコートへ
+        const dz = ball.thrower === 0 ? 1 : -1;
+        this.impact.play('fenceCross', ball.pos.x, ball.pos.y, 0, 0, 0, dz, this.fxColor);
+        break;
+      }
+      case 'catch':
+      case 'justCatch':
+      case 'parry': {
+        if (e.side === -1) break;
+        // 受け手の手元（表示している位置）。面と火花は投げてきた相手の方へ
+        const b = this.balance;
+        const me = this.players[e.side]!.position;
+        const foe = this.players[e.side === 0 ? 1 : 0]!.position;
+        let dx = foe.x - me.x, dz = foe.z - me.z;
+        const l = Math.hypot(dx, dz) || 1;
+        dx /= l; dz /= l;
+        const f = b.player.handForwardM;
+        this.impact.play(e.kind, me.x + dx * f, b.player.chestHeightM, me.z + dz * f, dx, 0.15, dz, this.fxColor);
+        break;
+      }
+      case 'roundStart':
+        this.impact.clear();
+        this.trail.clear();
+        break;
+    }
   }
 
   /** 補間済みの位置（カメラ追従用） */
@@ -392,6 +428,7 @@ export class ProtoView {
     const flying = mode === 'flight' || mode === 'linear';
     const bp = this.ball.position;
     this.trail.update(timeMs / 1000, flying, bp.x, bp.y, bp.z, w.ball.kind, w.ball.rally, this.camera, this.renderer);
+    this.impact.update(dtSec, this.camera, this.renderer);
 
     this.post.render();
   }
