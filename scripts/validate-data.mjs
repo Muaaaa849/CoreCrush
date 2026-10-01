@@ -91,5 +91,16 @@ const validateP = ajv.compile(load('schemas/plasmaFence.schema.json'));
 if (!validateP(fence)) for (const e of validateP.errors ?? []) fail(`vfx/plasmaFence.json${e.instancePath} ${e.message}`);
 else if (fence.heightM > balance.court.ceilingM) fail('plasmaFence.heightM が天井より高い');
 
+// ボールの軌跡（GDD 13）
+const trail = load('data/vfx/ballTrail.json');
+const validateT = ajv.compile(load('schemas/ballTrail.schema.json'));
+if (!validateT(trail)) for (const e of validateT.errors ?? []) fail(`vfx/ballTrail.json${e.instancePath} ${e.message}`);
+else {
+  // VFX はコアの可読性を下げない: 軌跡の芯はコアの顔より暗く
+  if (trail.coreHdr >= face.faceHdr) fail(`ballTrail.coreHdr(${trail.coreHdr}) がコアの顔(${face.faceHdr}) 以上`);
+  if (trail.edgeHdr > trail.coreHdr) fail('ballTrail.edgeHdr が coreHdr より明るい');
+  for (const k of Object.keys(balance.throw.types)) if (!(k in trail.colors)) fail(`ballTrail.colors に球種 ${k} がない`);
+}
+
 if (failed) process.exit(1);
-console.log('OK  data/balance.json, data/quality.json, data/render.json, data/vfx/coreFace.json, data/vfx/plasmaFence.json');
+console.log('OK  data/balance.json, data/quality.json, data/render.json, data/vfx/coreFace.json, data/vfx/plasmaFence.json, data/vfx/ballTrail.json');

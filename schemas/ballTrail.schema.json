@@ -1,0 +1,39 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CORE-CRUSH ボールの軌跡（GDD 13。プランナー 2026-10-01: 形は球種で変えず色で分ける。ラリーで球が速くなるほど色が濃くなる。最初は淡い）",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["lifeSec", "maxSamples", "minSampleM", "breakM", "widthM", "tailWidthMul", "minWidthPx", "coreHdr", "edgeHdr", "colors", "rally"],
+  "definitions": {
+    "hex": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" }
+  },
+  "properties": {
+    "$schema": { "type": "string" },
+    "lifeSec": { "description": "軌跡の点が消えるまでの秒（球が速いほど軌跡は長く見える）", "type": "number", "exclusiveMinimum": 0, "maximum": 1 },
+    "maxSamples": { "description": "リボンの点の上限（頂点バッファの大きさ。試合中に増やさない）", "type": "integer", "minimum": 4, "maximum": 256 },
+    "minSampleM": { "description": "点を足す最小の移動量（高画質の値。画質の particleMul で割る）", "type": "number", "exclusiveMinimum": 0 },
+    "breakM": { "description": "1 フレームでこれ以上飛んだら軌跡を切る（ラウンドの置き直しなど）", "type": "number", "exclusiveMinimum": 0 },
+    "widthM": { "description": "先頭の幅（m）", "type": "number", "exclusiveMinimum": 0 },
+    "tailWidthMul": { "description": "末尾の幅の倍率", "type": "number", "minimum": 0, "maximum": 1 },
+    "minWidthPx": { "description": "遠くで細くなりすぎないよう、先頭の幅の下限（画面上の CSS px）", "type": "number", "minimum": 0 },
+    "coreHdr": { "description": "芯の HDR 輝度。コアの顔（coreFace.faceHdr）より暗く", "type": "number", "minimum": 0 },
+    "edgeHdr": { "description": "縁の HDR 輝度", "type": "number", "minimum": 0 },
+    "colors": {
+      "description": "球種ごとの色（ラリーで最も濃くなったときの色）",
+      "type": "object", "additionalProperties": false,
+      "required": ["straight", "curveLeft", "curveRight", "lob", "aimed"],
+      "properties": {
+        "straight": { "$ref": "#/definitions/hex" }, "curveLeft": { "$ref": "#/definitions/hex" }, "curveRight": { "$ref": "#/definitions/hex" },
+        "lob": { "$ref": "#/definitions/hex" }, "aimed": { "$ref": "#/definitions/hex" }
+      }
+    },
+    "rally": {
+      "description": "ラリー n 回の色の濃さ: 白へ paleMix·(1 − min(n/fullRally, 1)) だけ寄せる",
+      "type": "object", "additionalProperties": false, "required": ["paleMix", "fullRally"],
+      "properties": {
+        "paleMix": { "description": "ラリー 0（投げた球）の淡さ。0=濃い 1=白", "type": "number", "minimum": 0, "maximum": 1 },
+        "fullRally": { "description": "この回数で最も濃くなる", "type": "integer", "minimum": 1 }
+      }
+    }
+  }
+}

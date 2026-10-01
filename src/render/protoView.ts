@@ -8,6 +8,7 @@ import type { QualityPreset } from './quality';
 import { Stage } from './stage';
 import { CoreFace } from '../vfx/coreFace';
 import { PlasmaFence } from '../vfx/plasmaFence';
+import { BallTrail } from '../vfx/ballTrail';
 import { Dust } from './dust';
 import { buildFighter } from './csgParts';
 import { applySurfaceDetail } from './surfaceDetail';
@@ -58,6 +59,7 @@ export class ProtoView {
   private ball: THREE.Mesh;
   private readonly face = new CoreFace();
   private readonly fence: PlasmaFence;
+  private readonly trail = new BallTrail();
   private readonly fenceTouchZ: number;
   private lastTimeMs = -1;
   private ballShadow: THREE.Mesh;
@@ -138,6 +140,8 @@ export class ProtoView {
     this.ball.castShadow = true;
     this.scene.add(this.ball);
     this.ball.add(this.face.light);
+    // 軌跡（球種で色分け、ラリーで濃くなる）
+    this.scene.add(this.trail.mesh);
     this.ballShadow = new THREE.Mesh(new THREE.CircleGeometry(b.ball.radiusM * 1.2, 24), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.5 }));
     this.ballShadow.rotation.x = -Math.PI / 2;
     this.scene.add(this.ballShadow);
@@ -219,6 +223,7 @@ export class ProtoView {
     this.post.configure(preset);
     this.stage.applyQuality(this.renderer, preset);
     this.dust.applyQuality(preset.particleMul);
+    this.trail.applyQuality(preset.particleMul);
     for (const blob of this.playerBlobs) blob.visible = preset.shadowMapSize === 0;
   }
 
@@ -383,6 +388,10 @@ export class ProtoView {
     this.camera.fov = cam.fov;
     this.camera.updateProjectionMatrix();
     this.camera.lookAt(cam.pos.x + f.x, cam.pos.y + f.y, cam.pos.z + f.z);
+    // 軌跡は見えている球の位置（補間・外挿後）で積む。飛翔中だけ
+    const flying = mode === 'flight' || mode === 'linear';
+    const bp = this.ball.position;
+    this.trail.update(timeMs / 1000, flying, bp.x, bp.y, bp.z, w.ball.kind, w.ball.rally, this.camera, this.renderer);
 
     this.post.render();
   }

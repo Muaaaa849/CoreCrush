@@ -1,0 +1,23 @@
+{
+  "$schema": "../../schemas/ballTrail.schema.json",
+  "lifeSec": 0.22,
+  "maxSamples": 48,
+  "minSampleM": 0.06,
+  "breakM": 3,
+  "widthM": 0.3,
+  "tailWidthMul": 0.2,
+  "minWidthPx": 3,
+  "coreHdr": 1.3,
+  "edgeHdr": 0.3,
+  "colors": {
+    "straight": "#ff2626",
+    "curveLeft": "#ffd000",
+    "curveRight": "#ffd000",
+    "lob": "#2a6bff",
+    "aimed": "#ff2626"
+  },
+  "rally": {
+    "paleMix": 0.55,
+    "fullRally": 6
+  }
+}
