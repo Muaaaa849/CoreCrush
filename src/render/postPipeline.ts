@@ -43,7 +43,7 @@ export interface RenderLook {
   stage: StageLook;
 }
 
-export const RENDER_LOOK: RenderLook = renderJson as RenderLook;
+export const RENDER_LOOK: RenderLook = renderJson as unknown as RenderLook;
 
 /** 調整用の表示（試作の ?post=glow）。glow = ブルームだけ */
 export type PostDebugView = 'none' | 'glow';

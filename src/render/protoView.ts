@@ -59,6 +59,11 @@ export class ProtoView {
   private readonly fenceTouchZ: number;
   private lastTimeMs = -1;
   private ballShadow: THREE.Mesh;
+  private readonly ballRing: THREE.Mesh;
+  private readonly ballRingMat: THREE.MeshBasicMaterial;
+  private readonly foeRings: THREE.Mesh[] = [];
+  private readonly charFill: THREE.PointLight;
+  private readonly foeLights: THREE.PointLight[] = [];
   private prev: Snap = { px: [0, 0], pz: [0, 0], bx: 0, by: 0, bz: 0, bMode: '', bThrower: -1, bRally: 0 };
   private cur: Snap = { px: [0, 0], pz: [0, 0], bx: 0, by: 0, bz: 0, bMode: '', bThrower: -1, bRally: 0 };
   private readonly post: PostPipeline;
@@ -127,6 +132,29 @@ export class ProtoView {
     this.ballShadow = new THREE.Mesh(new THREE.CircleGeometry(b.ball.radiusM * 1.2, 24), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.5 }));
     this.ballShadow.rotation.x = -Math.PI / 2;
     this.scene.add(this.ballShadow);
+
+    // 足元の輪（相手はチーム色、コアは顔の色）。遠くても位置が読めるように。光らせない（HDR < 1）
+    const MK = RENDER_LOOK.stage.markers;
+    const ringGeo = new THREE.RingGeometry(MK.ringInnerM, MK.ringOuterM, 40);
+    ringGeo.rotateX(-Math.PI / 2);
+    for (const side of [0, 1] as const) {
+      const ring = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({ color: new THREE.Color(PLAYER_COLOR[side]).multiplyScalar(MK.hdr), transparent: true, opacity: MK.opacity, depthWrite: false, blending: THREE.AdditiveBlending }));
+      ring.position.y = 0.012;
+      this.scene.add(ring);
+      this.foeRings.push(ring);
+      const fl = new THREE.PointLight(PLAYER_COLOR[side], rimLook.lightIntensity, rimLook.lightRangeM, 2);
+      fl.position.y = rimLook.lightUpM;
+      this.scene.add(fl);
+      this.foeLights.push(fl);
+    }
+    this.ballRingMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: MK.opacity, depthWrite: false, blending: THREE.AdditiveBlending });
+    this.ballRing = new THREE.Mesh(ringGeo, this.ballRingMat);
+    this.ballRing.scale.setScalar(b.ball.radiusM * 2.2 / MK.ringOuterM);
+    this.scene.add(this.ballRing);
+    // 自分の選手を背中側から照らす弱い補助光（カメラに付く）
+    const CF = RENDER_LOOK.stage.charFill;
+    this.charFill = new THREE.PointLight(new THREE.Color(CF.color), CF.intensity, CF.rangeM, 2);
+    this.scene.add(this.charFill);
   }
 
   /**
@@ -269,6 +297,14 @@ export class ProtoView {
       m.position.x = pp.x;
       m.position.z = pp.z;
       this.playerBlobs[pl.side]!.position.set(pp.x, 0.005, pp.z);
+      const ring = this.foeRings[pl.side]!;
+      ring.visible = pl.side !== me;
+      ring.position.x = pp.x;
+      ring.position.z = pp.z;
+      const fl = this.foeLights[pl.side]!;
+      fl.visible = pl.side !== me;
+      fl.position.x = pp.x;
+      fl.position.z = pp.z;
       if (Math.abs(pp.z) <= this.fenceTouchZ) this.fence.touch(pl.side, pp.x, b.player.bodyHeightM * 0.6);
       this.playerRims[pl.side]!.value = pl.side === me ? 0 : this.rimHdr;
       // 自分は FPS のとき隠す。相手は常に自分の方を向く
@@ -312,8 +348,12 @@ export class ProtoView {
     this.ball.scale.setScalar(stage === 'crack' ? 1 + 0.08 * Math.sin(timeMs / 30) : 1);
     this.ballShadow.visible = w.ball.mode !== 'held';
     this.ballShadow.position.set(this.ball.position.x, 0.006, this.ball.position.z);
+    this.ballRing.visible = this.ballShadow.visible;
+    this.ballRing.position.set(this.ball.position.x, 0.013, this.ball.position.z);
+    this.ballRingMat.color.copy(this.face.light.color).multiplyScalar(RENDER_LOOK.stage.markers.hdr);
 
     this.camera.position.set(cam.pos.x, cam.pos.y, cam.pos.z);
+    this.charFill.position.set(cam.pos.x, cam.pos.y + RENDER_LOOK.stage.charFill.upM, cam.pos.z);
     this.camera.fov = cam.fov;
     this.camera.updateProjectionMatrix();
     this.camera.lookAt(cam.pos.x + f.x, cam.pos.y + f.y, cam.pos.z + f.z);

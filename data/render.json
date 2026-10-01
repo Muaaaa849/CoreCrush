@@ -7,7 +7,7 @@
   },
   "post": {
     "vignette": {
-      "amount": 0.45,
+      "amount": 0.3,
       "radius": 0.85,
       "softness": 0.9
     },
@@ -20,7 +20,7 @@
       "amountPx": 2.5
     },
     "grain": {
-      "amount": 0.045,
+      "amount": 0.018,
       "shadowPow": 1.5
     },
     "lensFlare": {
@@ -45,9 +45,9 @@
         0.96
       ],
       "offset": [
-        0.004,
-        0.008,
-        0.016
+        0.012,
+        0.014,
+        0.022
       ],
       "power": [
         1.0,
@@ -65,9 +65,9 @@
       }
     },
     "dust": {
-      "count": 420,
-      "sizePx": 2.2,
-      "hdr": 0.6,
+      "count": 180,
+      "sizePx": 1.8,
+      "hdr": 0.35,
       "color": "#d8e2ff",
       "areaM": [
         26,
@@ -89,7 +89,7 @@
     "hemi": {
       "sky": "#2c3358",
       "ground": "#120812",
-      "intensity": 0.35
+      "intensity": 0.7
     },
     "sun": {
       "color": "#c9d3ff",
@@ -135,7 +135,7 @@
       }
     ],
     "env": {
-      "intensity": 0.25,
+      "intensity": 0.6,
       "panelHdr": 0.9
     },
     "floor": {
@@ -165,14 +165,17 @@
       "heightM": 6,
       "cellM": 0.18,
       "wireFrac": 0.12,
-      "opacity": 0.4,
+      "opacity": 0.22,
       "marginM": 0.3,
       "postColor": "#1a1d26",
       "postSpacingM": 4
     },
     "opponentRim": {
       "hdr": 0.95,
-      "power": 3
+      "power": 3,
+      "lightIntensity": 14,
+      "lightRangeM": 6,
+      "lightUpM": 2.4
     },
     "crowd": {
       "count": 160,
@@ -200,28 +203,7 @@
         "repeat": 3,
         "hdr": 0.5
       },
-      "layers": [
-        {
-          "texture": "backdrop_cyber",
-          "radiusM": 320,
-          "count": 8,
-          "widthM": 260,
-          "yM": -34,
-          "startDeg": 0,
-          "hdr": 0.7,
-          "haze": 0.3
-        },
-        {
-          "texture": "backdrop_steam",
-          "radiusM": 200,
-          "count": 11,
-          "widthM": 120,
-          "yM": -24,
-          "startDeg": 16,
-          "hdr": 0.6,
-          "haze": 0.2
-        }
-      ]
+      "layers": []
     },
     "props": [
       {
@@ -431,17 +413,17 @@
       "paintMix": 0.55,
       "paintRoughness": 0.38,
       "paintMetalness": 0.35,
-      "metalColor": "#2a2e36",
-      "metalRoughness": 0.32,
-      "suitColor": "#0d0f14",
+      "metalColor": "#5a606c",
+      "metalRoughness": 0.3,
+      "suitColor": "#23262f",
       "glowHdr": 1.0
     },
     "skyline": {
-      "count": 18,
+      "count": 30,
       "seed": 7,
       "radiusM": [
-        150,
-        300
+        140,
+        420
       ],
       "heightM": [
         90,
@@ -454,7 +436,7 @@
     },
     "floods": {
       "color": "#ffe4c8",
-      "intensity": 260,
+      "intensity": 520,
       "angleDeg": 34,
       "penumbra": 0.85,
       "decay": 2,
@@ -510,6 +492,18 @@
       "color": "#22252c",
       "lensHdr": 2.2,
       "lensColor": "#fff1dc"
+    },
+    "charFill": {
+      "color": "#9fb4ff",
+      "intensity": 6,
+      "rangeM": 7,
+      "upM": 0.6
+    },
+    "markers": {
+      "ringInnerM": 0.55,
+      "ringOuterM": 0.7,
+      "hdr": 0.9,
+      "opacity": 0.85
     }
   }
 }

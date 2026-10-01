@@ -27,6 +27,8 @@ export interface StageLook {
   floor: FloorLook;
   backdrop: BackdropLook;
   skyline: SkylineLook;
+  charFill: { color: string; intensity: number; rangeM: number; upM: number };
+  markers: { ringInnerM: number; ringOuterM: number; hdr: number; opacity: number };
   truss: { spansXM: number[]; lengthM: number; yM: number; sizeM: number; color: string; lensHdr: number; lensColor: string };
   floods: { color: string; intensity: number; angleDeg: number; penumbra: number; decay: number; rangeM: number; heightM: number; items: [number, number, number, number][] };
   props: PropGroup[];
@@ -34,7 +36,7 @@ export interface StageLook {
   fighter: { paintBase: string; paintMix: number; paintRoughness: number; paintMetalness: number; metalColor: string; metalRoughness: number; suitColor: string; glowHdr: number };
   lines: { widthM: number; hdr: number };
   cage: { color: string; heightM: number; cellM: number; wireFrac: number; opacity: number; marginM: number; postColor: string; postSpacingM: number };
-  opponentRim: { hdr: number; power: number };
+  opponentRim: { hdr: number; power: number; lightIntensity: number; lightRangeM: number; lightUpM: number };
   crowd: { count: number; color: string; rowsM: number[]; heightM: [number, number] };
 }
 

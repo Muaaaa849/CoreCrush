@@ -375,7 +375,9 @@
         "fighter",
         "skyline",
         "floods",
-        "truss"
+        "truss",
+        "charFill",
+        "markers"
       ],
       "properties": {
         "background": {
@@ -708,7 +710,10 @@
           "additionalProperties": false,
           "required": [
             "hdr",
-            "power"
+            "power",
+            "lightIntensity",
+            "lightRangeM",
+            "lightUpM"
           ],
           "properties": {
             "hdr": {
@@ -720,6 +725,18 @@
             "power": {
               "type": "number",
               "exclusiveMinimum": 0
+            },
+            "lightIntensity": {
+              "type": "number",
+              "minimum": 0,
+              "description": "相手の頭上のチーム色の点光源（足元に光だまり。遠くでも位置が読める）"
+            },
+            "lightRangeM": {
+              "type": "number",
+              "minimum": 0
+            },
+            "lightUpM": {
+              "type": "number"
             }
           },
           "description": "相手のリムライト"
@@ -1196,6 +1213,65 @@
             "lensColor": {
               "type": "string",
               "pattern": "^#[0-9a-fA-F]{6}$"
+            }
+          }
+        },
+        "charFill": {
+          "description": "自分の選手を背中側から照らす弱い補助光（カメラに付ける。キャラ用のフィルライト）",
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "color",
+            "intensity",
+            "rangeM",
+            "upM"
+          ],
+          "properties": {
+            "color": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}$"
+            },
+            "intensity": {
+              "type": "number",
+              "minimum": 0
+            },
+            "rangeM": {
+              "type": "number",
+              "minimum": 0
+            },
+            "upM": {
+              "type": "number"
+            }
+          }
+        },
+        "markers": {
+          "description": "相手とコアの足元の輪（チーム色・コアの顔の色）。光らせない",
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "ringInnerM",
+            "ringOuterM",
+            "hdr",
+            "opacity"
+          ],
+          "properties": {
+            "ringInnerM": {
+              "type": "number",
+              "minimum": 0
+            },
+            "ringOuterM": {
+              "type": "number",
+              "minimum": 0
+            },
+            "hdr": {
+              "type": "number",
+              "minimum": 0,
+              "exclusiveMaximum": 1
+            },
+            "opacity": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
             }
           }
         }
