@@ -14,6 +14,7 @@ import { Backdrop, type BackdropLook } from './backdrop';
 import { loadTexture } from './assets';
 import { Props, type FireLook, type PropGroup } from './props';
 import { buildPost, buildTruss } from './csgParts';
+import type { SurfaceDetailLook } from './surfaceDetail';
 import { Skyline, type SkylineLook } from './skyline';
 
 type Vec3 = [number, number, number];
@@ -29,11 +30,12 @@ export interface StageLook {
   skyline: SkylineLook;
   charFill: { color: string; intensity: number; rangeM: number; upM: number };
   markers: { ringInnerM: number; ringOuterM: number; hdr: number; opacity: number };
+  beacon: { heightM: number; radiusM: number; hdr: number; opacity: number };
   truss: { spansXM: number[]; lengthM: number; yM: number; sizeM: number; color: string; lensHdr: number; lensColor: string };
   floods: { color: string; intensity: number; angleDeg: number; penumbra: number; decay: number; rangeM: number; heightM: number; items: [number, number, number, number][] };
   props: PropGroup[];
   fire: FireLook;
-  fighter: { paintBase: string; paintMix: number; paintRoughness: number; paintMetalness: number; metalColor: string; metalRoughness: number; suitColor: string; glowHdr: number };
+  fighter: { paintBase: string; paintMix: number; paintRoughness: number; paintMetalness: number; metalColor: string; metalRoughness: number; suitColor: string; glowHdr: number; foeGlowHdr: number; detail: SurfaceDetailLook };
   lines: { widthM: number; hdr: number };
   cage: { color: string; heightM: number; cellM: number; wireFrac: number; opacity: number; marginM: number; postColor: string; postSpacingM: number };
   opponentRim: { hdr: number; power: number; lightIntensity: number; lightRangeM: number; lightUpM: number };

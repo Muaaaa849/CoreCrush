@@ -377,7 +377,8 @@
         "floods",
         "truss",
         "charFill",
-        "markers"
+        "markers",
+        "beacon"
       ],
       "properties": {
         "background": {
@@ -1001,7 +1002,9 @@
             "metalColor",
             "metalRoughness",
             "suitColor",
-            "glowHdr"
+            "glowHdr",
+            "detail",
+            "foeGlowHdr"
           ],
           "properties": {
             "paintBase": {
@@ -1041,6 +1044,54 @@
               "type": "number",
               "minimum": 0,
               "maximum": 3
+            },
+            "detail": {
+              "description": "装甲の継ぎ目と擦れ（src/render/surfaceDetail.ts）",
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "panelM",
+                "seamFrac",
+                "seamDarken",
+                "wearScale",
+                "wearRoughness"
+              ],
+              "properties": {
+                "panelM": {
+                  "type": "array",
+                  "items": {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                  },
+                  "minItems": 3,
+                  "maxItems": 3
+                },
+                "seamFrac": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 0.5
+                },
+                "seamDarken": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                },
+                "wearScale": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "wearRoughness": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                }
+              }
+            },
+            "foeGlowHdr": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 3,
+              "description": "相手の発光ライン（ブルームで輪郭が浮く。コアの顔より暗く）"
             }
           }
         },
@@ -1267,6 +1318,37 @@
               "type": "number",
               "minimum": 0,
               "exclusiveMaximum": 1
+            },
+            "opacity": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          }
+        },
+        "beacon": {
+          "description": "転がっているコアの上に立つ光の柱（拾える球の位置を遠くから読む）",
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "heightM",
+            "radiusM",
+            "hdr",
+            "opacity"
+          ],
+          "properties": {
+            "heightM": {
+              "type": "number",
+              "minimum": 0
+            },
+            "radiusM": {
+              "type": "number",
+              "minimum": 0
+            },
+            "hdr": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 3
             },
             "opacity": {
               "type": "number",

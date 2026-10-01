@@ -2,7 +2,7 @@
 import * as THREE from 'three/webgpu';
 import type { Balance } from '../sim/balance';
 import type { Player, SimEvent, World } from '../sim/types';
-import { clamp, color, dot, float, materialEmissive, normalView, positionViewDirection, uniform } from 'three/tsl';
+import { clamp, color, dot, float, normalView, positionLocal, positionViewDirection, uniform } from 'three/tsl';
 import { PostPipeline, RENDER_LOOK, type PostDebugView } from './postPipeline';
 import type { QualityPreset } from './quality';
 import { Stage } from './stage';
@@ -10,6 +10,7 @@ import { CoreFace } from '../vfx/coreFace';
 import { PlasmaFence } from '../vfx/plasmaFence';
 import { Dust } from './dust';
 import { buildFighter } from './csgParts';
+import { applySurfaceDetail } from './surfaceDetail';
 
 export type FaceStage = 'smile' | 'nervous' | 'angry' | 'blink' | 'crack';
 
@@ -47,7 +48,8 @@ export class ProtoView {
   readonly scene = new THREE.Scene();
   readonly camera = new THREE.PerspectiveCamera(75, 16 / 9, 0.05, 1000);
   private players: THREE.Group[] = [];
-  private glowBase = 0;
+  private glowBase = [0, 0];
+  private me: 0 | 1 = 0;
   private playerMats: THREE.MeshStandardNodeMaterial[] = [];
   private playerRims: { value: number }[] = [];
   private playerBlobs: THREE.Mesh[] = [];
@@ -60,6 +62,9 @@ export class ProtoView {
   private lastTimeMs = -1;
   private ballShadow: THREE.Mesh;
   private readonly ballRing: THREE.Mesh;
+  private readonly beacon: THREE.Mesh;
+  private readonly beaconMat: THREE.MeshBasicNodeMaterial;
+  private readonly beaconColor: { value: THREE.Color } & THREE.Node<"color">;
   private readonly ballRingMat: THREE.MeshBasicMaterial;
   private readonly foeRings: THREE.Mesh[] = [];
   private readonly charFill: THREE.PointLight;
@@ -98,8 +103,10 @@ export class ProtoView {
       const fres = float(1).sub(clamp(dot(normalView, positionViewDirection), 0, 1)).pow(rimLook.power);
       const rimNode = color(PLAYER_COLOR[side]).mul(fres).mul(rim);
       const paint = new THREE.MeshStandardNodeMaterial({ color: team.clone().lerp(new THREE.Color(F.paintBase), F.paintMix), roughness: F.paintRoughness, metalness: F.paintMetalness });
+      applySurfaceDetail(paint, paint.color, F.paintRoughness, F.detail);
       paint.emissiveNode = rimNode;
       const metal = new THREE.MeshStandardNodeMaterial({ color: new THREE.Color(F.metalColor), roughness: F.metalRoughness, metalness: 0.9 });
+      applySurfaceDetail(metal, metal.color, F.metalRoughness, F.detail);
       metal.emissiveNode = rimNode;
       const suit = new THREE.MeshStandardNodeMaterial({ color: new THREE.Color(F.suitColor), roughness: 0.85, metalness: 0 });
       suit.emissiveNode = rimNode;
@@ -123,7 +130,7 @@ export class ProtoView {
       this.playerBlobs.push(blob);
     }
     this.rimHdr = rimLook.hdr;
-    this.glowBase = F.glowHdr;
+    this.glowBase = [F.glowHdr, F.foeGlowHdr];
 
     this.ball = new THREE.Mesh(new THREE.SphereGeometry(b.ball.radiusM, 48, 24), this.face.material);
     this.ball.castShadow = true;
@@ -151,6 +158,19 @@ export class ProtoView {
     this.ballRing = new THREE.Mesh(ringGeo, this.ballRingMat);
     this.ballRing.scale.setScalar(b.ball.radiusM * 2.2 / MK.ringOuterM);
     this.scene.add(this.ballRing);
+    // 転がっているコアの上の光の柱（上へ薄れる）
+    const BC = RENDER_LOOK.stage.beacon;
+    const beaconGeo = new THREE.CylinderGeometry(BC.radiusM * 0.6, BC.radiusM, BC.heightM, 24, 1, true);
+    beaconGeo.translate(0, BC.heightM / 2, 0);
+    this.beaconMat = new THREE.MeshBasicNodeMaterial({ transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide });
+    this.beaconColor = uniform(new THREE.Color(1, 1, 1)) as unknown as { value: THREE.Color } & THREE.Node<"color">;
+    const fade = float(1).sub(positionLocal.y.div(BC.heightM)).pow(2);
+    const edge = float(1).sub(clamp(dot(normalView, positionViewDirection).abs(), 0, 1)).pow(1.5).oneMinus().mul(0.7).add(0.3);
+    this.beaconMat.colorNode = this.beaconColor.mul(BC.hdr);
+    this.beaconMat.opacityNode = fade.mul(edge).mul(BC.opacity);
+    this.beacon = new THREE.Mesh(beaconGeo, this.beaconMat);
+    this.beacon.visible = false;
+    this.scene.add(this.beacon);
     // 自分の選手を背中側から照らす弱い補助光（カメラに付く）
     const CF = RENDER_LOOK.stage.charFill;
     this.charFill = new THREE.PointLight(new THREE.Color(CF.color), CF.intensity, CF.rangeM, 2);
@@ -276,7 +296,7 @@ export class ProtoView {
       case 'windup': case 'fakeWindup': k = 1.4; break;
     }
     mat.emissive.setHex(emissive);
-    mat.emissiveIntensity = this.glowBase * k;
+    mat.emissiveIntensity = (i === this.me ? this.glowBase[0]! : this.glowBase[1]!) * k;
   }
 
   /**
@@ -287,6 +307,7 @@ export class ProtoView {
     me: 0 | 1, timeMs: number, foeDisplay: { x: number; z: number } | null = null,
   ): void {
     const b = w.balance;
+    this.me = me;
     const dtSec = this.lastTimeMs < 0 ? 0 : Math.min(0.1, (timeMs - this.lastTimeMs) / 1000);
     this.lastTimeMs = timeMs;
     this.fence.update(timeMs / 1000, dtSec);
@@ -351,6 +372,9 @@ export class ProtoView {
     this.ballRing.visible = this.ballShadow.visible;
     this.ballRing.position.set(this.ball.position.x, 0.013, this.ball.position.z);
     this.ballRingMat.color.copy(this.face.light.color).multiplyScalar(RENDER_LOOK.stage.markers.hdr);
+    this.beacon.visible = w.ball.mode === 'loose';
+    this.beacon.position.set(this.ball.position.x, 0, this.ball.position.z);
+    this.beaconColor.value.copy(this.face.light.color);
 
     this.camera.position.set(cam.pos.x, cam.pos.y, cam.pos.z);
     this.charFill.position.set(cam.pos.x, cam.pos.y + RENDER_LOOK.stage.charFill.upM, cam.pos.z);

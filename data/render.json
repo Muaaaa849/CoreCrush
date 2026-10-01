@@ -103,7 +103,7 @@
     "areaLights": [
       {
         "color": "#ff2bd6",
-        "intensity": 0.9,
+        "intensity": 2.4,
         "widthM": 30,
         "heightM": 1.2,
         "posM": [
@@ -119,7 +119,7 @@
       },
       {
         "color": "#35f2ff",
-        "intensity": 0.9,
+        "intensity": 2.4,
         "widthM": 30,
         "heightM": 1.2,
         "posM": [
@@ -140,7 +140,7 @@
     },
     "floor": {
       "tileM": 3,
-      "albedoMul": 0.55,
+      "albedoMul": 0.75,
       "tint": "#9aa0b8",
       "roughnessMul": 1.0,
       "roughnessMin": 0.04,
@@ -416,7 +416,19 @@
       "metalColor": "#5a606c",
       "metalRoughness": 0.3,
       "suitColor": "#23262f",
-      "glowHdr": 1.0
+      "glowHdr": 1.0,
+      "detail": {
+        "panelM": [
+          0.19,
+          0.15,
+          0.23
+        ],
+        "seamFrac": 0.035,
+        "seamDarken": 0.4,
+        "wearScale": 9,
+        "wearRoughness": 0.35
+      },
+      "foeGlowHdr": 2.4
     },
     "skyline": {
       "count": 30,
@@ -504,6 +516,12 @@
       "ringOuterM": 0.7,
       "hdr": 0.9,
       "opacity": 0.85
+    },
+    "beacon": {
+      "heightM": 7,
+      "radiusM": 0.32,
+      "hdr": 1.1,
+      "opacity": 0.4
     }
   }
 }

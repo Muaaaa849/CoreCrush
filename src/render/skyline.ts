@@ -27,12 +27,11 @@ function nightMaterial(look: SkylineLook): THREE.MeshBasicNodeMaterial {
   const h2 = fract(h1.mul(17.31));
   const h3 = fract(h1.mul(41.77));
   const lit = h1.lessThan(look.litChance);
-  // 窓の色: 暖色の室内灯が多め、たまに寒色・ネオン
+  // 窓の色: 暖色の室内灯が多め、白・薄い寒色。チーム色（シアン・マゼンタ）は使わない（選手とコアだけの色にして読みやすく）
   const warm = color('#ffb46a');
-  const cool = color('#8fc4ff');
-  const neonA = color('#ff3fd0');
-  const neonB = color('#3ff0ff');
-  const winCol = select(h2.lessThan(0.55), warm, select(h2.lessThan(0.8), cool, select(h2.lessThan(0.9), neonA, neonB)));
+  const white = color('#fff1dc');
+  const cool = color('#b8c8e8');
+  const winCol = select(h2.lessThan(0.6), warm, select(h2.lessThan(0.85), white, cool));
   // 部屋の明かり: 窓の中央が明るく縁へ落ちる＋ブラインドの横縞（たまに）
   const d = length(uv().sub(vec2(0.5, 0.55)).mul(vec2(1.2, 1.6)));
   const room2 = smoothstep(0.85, 0.15, d).mul(0.65).add(0.35);
