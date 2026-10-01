@@ -416,7 +416,6 @@
         "truss",
         "charFill",
         "markers",
-        "beacon",
         "ribbon"
       ],
       "properties": {
@@ -1587,8 +1586,6 @@
             "ringOuterM",
             "hdr",
             "opacity",
-            "haloPx",
-            "haloHdr",
             "foeMarkerPx",
             "foeMarkerUpM"
           ],
@@ -1611,16 +1608,6 @@
               "minimum": 0,
               "maximum": 1
             },
-            "haloPx": {
-              "type": "number",
-              "minimum": 0,
-              "description": "コアの周りの光の輪の画面上の大きさ（px。遠くでも小さくならない）"
-            },
-            "haloHdr": {
-              "type": "number",
-              "minimum": 0,
-              "maximum": 3
-            },
             "foeMarkerPx": {
               "type": "number",
               "minimum": 0,
@@ -1629,48 +1616,6 @@
             "foeMarkerUpM": {
               "type": "number",
               "minimum": 0
-            }
-          }
-        },
-        "beacon": {
-          "description": "転がっているコアの上に立つ光の柱（拾える球の位置を遠くから読む）",
-          "type": "object",
-          "additionalProperties": false,
-          "required": [
-            "heightM",
-            "radiusM",
-            "hdr",
-            "opacity",
-            "nearFadeM"
-          ],
-          "properties": {
-            "heightM": {
-              "type": "number",
-              "minimum": 0
-            },
-            "radiusM": {
-              "type": "number",
-              "minimum": 0
-            },
-            "hdr": {
-              "type": "number",
-              "minimum": 0,
-              "maximum": 3
-            },
-            "opacity": {
-              "type": "number",
-              "minimum": 0,
-              "maximum": 1
-            },
-            "nearFadeM": {
-              "type": "array",
-              "items": {
-                "type": "number",
-                "minimum": 0
-              },
-              "minItems": 2,
-              "maxItems": 2,
-              "description": "カメラからこの距離（m）の間で現れる（近くでは自分に重ならない）"
             }
           }
         },

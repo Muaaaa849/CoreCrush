@@ -32,8 +32,7 @@ export interface StageLook {
   skyline: SkylineLook;
   ribbon: RibbonLook;
   charFill: { color: string; intensity: number; rangeM: number; upM: number };
-  markers: { ringInnerM: number; ringOuterM: number; hdr: number; opacity: number; haloPx: number; haloHdr: number; foeMarkerPx: number; foeMarkerUpM: number };
-  beacon: { heightM: number; radiusM: number; hdr: number; opacity: number; nearFadeM: [number, number] };
+  markers: { ringInnerM: number; ringOuterM: number; hdr: number; opacity: number; foeMarkerPx: number; foeMarkerUpM: number };
   truss: { spansXM: number[]; lengthM: number; yM: number; sizeM: number; color: string; lensHdr: number; lensColor: string };
   floods: { color: string; intensity: number; angleDeg: number; penumbra: number; decay: number; rangeM: number; heightM: number; items: [number, number, number, number][] };
   props: PropGroup[];

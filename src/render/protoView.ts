@@ -2,7 +2,7 @@
 import * as THREE from 'three/webgpu';
 import type { Balance } from '../sim/balance';
 import type { Player, SimEvent, World } from '../sim/types';
-import { clamp, color, dot, float, fract, normalView, positionLocal, positionView, positionViewDirection, select, smoothstep, uniform, uv } from 'three/tsl';
+import { clamp, color, dot, float, fract, normalView, positionLocal, positionViewDirection, select, uniform, uv } from 'three/tsl';
 import { PostPipeline, RENDER_LOOK, type PostDebugView } from './postPipeline';
 import type { QualityPreset } from './quality';
 import { Stage } from './stage';
@@ -62,13 +62,9 @@ export class ProtoView {
   private lastTimeMs = -1;
   private ballShadow: THREE.Mesh;
   private readonly ballRing: THREE.Mesh;
-  private readonly beacon: THREE.Mesh;
-  private readonly beaconMat: THREE.MeshBasicNodeMaterial;
-  private readonly beaconColor: { value: THREE.Color } & THREE.Node<"color">;
   private readonly ballRingMat: THREE.MeshBasicMaterial;
   private readonly foeRings: THREE.Mesh[] = [];
   private readonly charFill: THREE.PointLight;
-  private readonly halo: THREE.Sprite;
   private readonly foeMarkers: THREE.Sprite[] = [];
   private readonly foeLights: THREE.PointLight[] = [];
   private prev: Snap = { px: [0, 0], pz: [0, 0], bx: 0, by: 0, bz: 0, bMode: '', bThrower: -1, bRally: 0 };
@@ -164,30 +160,7 @@ export class ProtoView {
     this.ballRing = new THREE.Mesh(ringGeo, this.ballRingMat);
     this.ballRing.scale.setScalar(b.ball.radiusM * 2.2 / MK.ringOuterM);
     this.scene.add(this.ballRing);
-    // 転がっているコアの上の光の柱（上へ薄れる）
-    const BC = RENDER_LOOK.stage.beacon;
-    const beaconGeo = new THREE.CylinderGeometry(BC.radiusM * 0.6, BC.radiusM, BC.heightM, 24, 1, true);
-    beaconGeo.translate(0, BC.heightM / 2, 0);
-    this.beaconMat = new THREE.MeshBasicNodeMaterial({ transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide });
-    this.beaconColor = uniform(new THREE.Color(1, 1, 1)) as unknown as { value: THREE.Color } & THREE.Node<"color">;
-    const fade = float(1).sub(positionLocal.y.div(BC.heightM)).pow(2);
-    // 柱の芯が明るく縁はぼかす（板に見えないように）、カメラの近くでは消す（自分に重ならない）
-    const core = clamp(dot(normalView, positionViewDirection).abs(), 0, 1).pow(2.5);
-    const near = smoothstep(BC.nearFadeM[0], BC.nearFadeM[1], positionView.z.negate());
-    this.beaconMat.colorNode = this.beaconColor.mul(BC.hdr);
-    this.beaconMat.opacityNode = fade.mul(core).mul(near).mul(BC.opacity);
-    this.beacon = new THREE.Mesh(beaconGeo, this.beaconMat);
-    this.beacon.visible = false;
-    this.scene.add(this.beacon);
-    // 画面上で一定の大きさのしるし（遠くても読める）: コアの周りの柔らかい光、相手の頭上の下向き三角
-    const haloMat = new THREE.PointsNodeMaterial({ transparent: true, depthWrite: false, depthTest: false, blending: THREE.AdditiveBlending, sizeAttenuation: false });
-    const hd = uv().sub(0.5).length().mul(2);
-    haloMat.colorNode = this.beaconColor.mul(MK.haloHdr);
-    haloMat.opacityNode = smoothstep(1, 0.25, hd).mul(smoothstep(0.0, 0.35, hd)).mul(0.9);
-    haloMat.sizeNode = float(MK.haloPx);
-    this.halo = new THREE.Sprite(haloMat);
-    this.halo.renderOrder = 5;
-    this.scene.add(this.halo);
+    // 相手の頭上の下向き三角（画面上で一定の大きさ。遠くても位置が読める）
     for (const side of [0, 1] as const) {
       const mk = new THREE.PointsNodeMaterial({ transparent: true, depthWrite: false, sizeAttenuation: false });
       const q = uv();
@@ -404,12 +377,6 @@ export class ProtoView {
     this.ballRing.visible = this.ballShadow.visible;
     this.ballRing.position.set(this.ball.position.x, 0.013, this.ball.position.z);
     this.ballRingMat.color.copy(this.face.light.color).multiplyScalar(RENDER_LOOK.stage.markers.hdr);
-    this.beacon.visible = w.ball.mode === 'loose';
-    this.beacon.position.set(this.ball.position.x, 0, this.ball.position.z);
-    this.beaconColor.value.copy(this.face.light.color);
-    // 自分が FPS で持っている間は出さない（視界を遮らない）
-    this.halo.visible = !(heldByMe && cam.blend > 0.5);
-    this.halo.position.copy(this.ball.position);
 
     this.camera.position.set(cam.pos.x, cam.pos.y, cam.pos.z);
     this.charFill.position.set(cam.pos.x, cam.pos.y + RENDER_LOOK.stage.charFill.upM, cam.pos.z);
