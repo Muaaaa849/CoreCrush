@@ -318,3 +318,19 @@ export function buildTruss(spans: number[], lengthM: number, yM: number, sizeM: 
   for (const g of Object.values(out)) g.computeBoundingSphere();
   return out;
 }
+
+/** LED の帯看板の筐体（縁を残して前面をくぼませた箱）。z 方向に長い。前面は -x 側（x>0 に置くと内向き） */
+export function buildRibbonHousing(lengthM: number, heightM: number, depthM: number): { housing: THREE.BufferGeometry; screen: THREE.BufferGeometry } {
+  let h = chamferBox(depthM, heightM, lengthM, depthM * 0.3, [0, heightM / 2, 0]);
+  const lip = heightM * 0.12;
+  h = op(h, box(depthM * 0.6, heightM - lip * 2, lengthM - lip * 2, [-depthM * 0.35, heightM / 2, 0]), SUBTRACTION);
+  // 背面の放熱スリット
+  const n = Math.floor(lengthM / 1.2);
+  for (let i = 0; i < n; i++) h = op(h, box(depthM * 0.3, heightM * 0.5, 0.06, [depthM * 0.45, heightM / 2, -lengthM / 2 + 0.6 + i * 1.2]), SUBTRACTION);
+  const housing = geom(h);
+  housing.computeBoundingSphere();
+  const screen = new THREE.PlaneGeometry(lengthM - lip * 2, heightM - lip * 2);
+  screen.rotateY(-Math.PI / 2);
+  screen.translate(-depthM * 0.04, heightM / 2, 0);
+  return { housing, screen };
+}

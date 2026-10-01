@@ -378,7 +378,8 @@
         "truss",
         "charFill",
         "markers",
-        "beacon"
+        "beacon",
+        "ribbon"
       ],
       "properties": {
         "background": {
@@ -1181,7 +1182,8 @@
             "streetGlowM",
             "streetGlowColor",
             "signs",
-            "beacons"
+            "beacons",
+            "searchlights"
           ],
           "properties": {
             "count": {
@@ -1296,6 +1298,62 @@
                   "maximum": 3
                 },
                 "sizeM": {
+                  "type": "number",
+                  "minimum": 0
+                }
+              }
+            },
+            "searchlights": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "count",
+                "color",
+                "hdr",
+                "lengthM",
+                "radiusM",
+                "opacity",
+                "tiltDeg",
+                "swayDeg",
+                "swaySpeed"
+              ],
+              "properties": {
+                "count": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 8
+                },
+                "color": {
+                  "type": "string",
+                  "pattern": "^#[0-9a-fA-F]{6}$"
+                },
+                "hdr": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 2
+                },
+                "lengthM": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "radiusM": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "opacity": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                },
+                "tiltDeg": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "swayDeg": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "swaySpeed": {
                   "type": "number",
                   "minimum": 0
                 }
@@ -1534,6 +1592,61 @@
               "minItems": 2,
               "maxItems": 2,
               "description": "カメラからこの距離（m）の間で現れる（近くでは自分に重ならない）"
+            }
+          }
+        },
+        "ribbon": {
+          "description": "コート脇の LED 帯看板（src/render/ribbon.ts）。チーム色は使わない",
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "xM",
+            "lengthM",
+            "heightM",
+            "depthM",
+            "colorA",
+            "colorB",
+            "hdr",
+            "speed",
+            "housingColor"
+          ],
+          "properties": {
+            "xM": {
+              "type": "number",
+              "minimum": 0
+            },
+            "lengthM": {
+              "type": "number",
+              "minimum": 0
+            },
+            "heightM": {
+              "type": "number",
+              "minimum": 0
+            },
+            "depthM": {
+              "type": "number",
+              "minimum": 0
+            },
+            "colorA": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}$"
+            },
+            "colorB": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}$"
+            },
+            "hdr": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 2
+            },
+            "speed": {
+              "type": "number",
+              "minimum": 0
+            },
+            "housingColor": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}$"
             }
           }
         }

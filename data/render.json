@@ -1,5 +1,5 @@
 {
-  "toneMappingExposure": 0.9,
+  "toneMappingExposure": 1.0,
   "bloom": {
     "strength": 1.0,
     "radius": 0.4,
@@ -171,7 +171,7 @@
       "hdr": 1.6
     },
     "cage": {
-      "color": "#7a8499",
+      "color": "#a9b4c8",
       "heightM": 6,
       "cellM": 0.18,
       "wireFrac": 0.12,
@@ -464,7 +464,6 @@
         "chance": 0.4,
         "colors": [
           "#ffb03a",
-          "#ff4a3a",
           "#f4f0e0",
           "#9cff7a",
           "#ffd84a"
@@ -479,6 +478,17 @@
         "color": "#ff2a1a",
         "hdr": 1.8,
         "sizeM": 0.6
+      },
+      "searchlights": {
+        "count": 4,
+        "color": "#dfe6ff",
+        "hdr": 0.9,
+        "lengthM": 420,
+        "radiusM": 14,
+        "opacity": 0.16,
+        "tiltDeg": 28,
+        "swayDeg": 14,
+        "swaySpeed": 0.12
       }
     },
     "floods": {
@@ -558,13 +568,24 @@
     },
     "beacon": {
       "heightM": 7,
-      "radiusM": 0.45,
+      "radiusM": 0.2,
       "hdr": 1.1,
-      "opacity": 0.4,
+      "opacity": 0.5,
       "nearFadeM": [
         5,
         12
       ]
+    },
+    "ribbon": {
+      "xM": 10.75,
+      "lengthM": 40,
+      "heightM": 1.0,
+      "depthM": 0.3,
+      "colorA": "#ffb347",
+      "colorB": "#f2f4ff",
+      "hdr": 1.2,
+      "speed": 2.5,
+      "housingColor": "#1d2027"
     }
   }
 }

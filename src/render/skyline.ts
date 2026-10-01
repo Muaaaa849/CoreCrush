@@ -3,7 +3,7 @@
 // 起動時に一度だけ生成（1 棟 1 ジオメトリ・1 ドローコール、全棟で 1 マテリアル）。影は落とさない。数は画質の decorMul を掛ける。
 import * as THREE from 'three/webgpu';
 import { InterpolationSamplingMode, InterpolationSamplingType } from 'three/webgpu';
-import { attribute, color, dot, float, floor, fract, hash, length, max, min, mix, normalWorldGeometry, positionWorld, select, sin, smoothstep, time, uv, varying, vec2, vec3 } from 'three/tsl';
+import { attribute, color, dot, float, floor, fract, hash, length, max, min, mix, normalView, normalWorldGeometry, positionLocal, positionViewDirection, positionWorld, select, sin, smoothstep, time, uv, varying, vec2, vec3 } from 'three/tsl';
 import { SkyscraperGenerator } from 'three/addons/generators/city/SkyscraperGenerator.js';
 
 // 生成器が頂点に焼く部位の番号（SkyscraperGenerator.js の PartId）
@@ -68,6 +68,8 @@ export interface SkylineLook {
   signs: { chance: number; colors: string[]; hdr: number; heightM: [number, number] };
   /** 屋上の航空障害灯 */
   beacons: { color: string; hdr: number; sizeM: number };
+  /** 夜空を掃くサーチライトの光芒 */
+  searchlights: { count: number; color: string; hdr: number; lengthM: number; radiusM: number; opacity: number; tiltDeg: number; swayDeg: number; swaySpeed: number };
 }
 
 /** LED 看板: 文字のような点の並び（行・字・画素をハッシュで点灯）と枠。色はインスタンス色 */
@@ -85,7 +87,7 @@ function signMaterial(look: SkylineLook): THREE.MeshBasicNodeMaterial {
   const on = hash(ch.x.mul(7).add(ch.y.mul(131)).add(px.x.mul(17)).add(px.y.mul(53)).add(seed)).greaterThan(0.4);
   const lineOn = hash(ch.y.add(seed.mul(3))).greaterThan(0.25);
   const lit = select(inGlyph.and(on).and(lineOn), float(1), float(0.06));
-  const border = max(smoothstep(0.03, 0.0, min(st.x, st.y.min(float(1).sub(st.x)).min(float(1).sub(st.y)))), float(0));
+  const border = max(smoothstep(0.012, 0.0, min(st.x, st.y.min(float(1).sub(st.x)).min(float(1).sub(st.y)))), float(0));
   const flick = sin(time.mul(1.3).add(seed)).mul(0.08).add(0.92);
   // 色はインスタンス色（InstanceNode が掛ける）
   mat.colorNode = vec3(max(lit, border)).mul(flick).mul(look.signs.hdr);
@@ -156,9 +158,41 @@ export class Skyline {
     roofs.forEach((p, i) => lights.setMatrixAt(i, mm.makeTranslation(p.x, p.y, p.z)));
     lights.frustumCulled = false;
     this.group.add(lights);
+
+    // サーチライト: 屋上から斜め上へ伸びる円錐（根元が明るく先へ薄れる、縁はぼかす）
+    const SL = look.searchlights;
+    this.sl = SL;
+    const cone = new THREE.CylinderGeometry(SL.radiusM, SL.radiusM * 0.08, SL.lengthM, 20, 1, true);
+    cone.translate(0, SL.lengthM / 2, 0);
+    const bmat = new THREE.MeshBasicNodeMaterial({ transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, fog: false });
+    const along = float(1).sub(positionLocal.y.div(SL.lengthM));
+    const coreK = dot(normalView, positionViewDirection).abs().clamp(0, 1).pow(2);
+    bmat.colorNode = color(SL.color).mul(SL.hdr);
+    bmat.opacityNode = along.pow(1.6).mul(coreK).mul(SL.opacity);
+    for (let i = 0; i < SL.count && i * 2 < roofs.length; i++) {
+      const p = roofs[Math.floor((i / SL.count) * roofs.length) & ~1]!;
+      const mesh = new THREE.Mesh(cone, bmat);
+      mesh.position.copy(p);
+      mesh.frustumCulled = false;
+      this.group.add(mesh);
+      this.beams.push({ mesh, phase: rnd() * 6.28, yaw: Math.atan2(p.x, p.z) + Math.PI + (rnd() - 0.5) * 1.2 });
+    }
+    this.update(0);
   }
 
   private signs: THREE.InstancedMesh | null = null;
+  private readonly beams: { mesh: THREE.Mesh; phase: number; yaw: number }[] = [];
+  private readonly sl: SkylineLook['searchlights'];
+
+  /** 光芒をゆっくり振る */
+  update(timeSec: number): void {
+    const L = this.sl;
+    const tilt = THREE.MathUtils.degToRad(L.tiltDeg);
+    const sway = THREE.MathUtils.degToRad(L.swayDeg);
+    for (const b of this.beams) {
+      b.mesh.rotation.set(0, b.yaw + Math.sin(timeSec * L.swaySpeed + b.phase) * sway, tilt + Math.sin(timeSec * L.swaySpeed * 0.7 + b.phase * 2) * sway * 0.4, 'YZX');
+    }
+  }
 
   applyDecor(decorMul: number): void {
     const n = Math.round(this.towers.length * decorMul);

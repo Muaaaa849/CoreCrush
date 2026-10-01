@@ -16,6 +16,7 @@ import { Props, type FireLook, type PropGroup } from './props';
 import { buildPost, buildTruss } from './csgParts';
 import type { SurfaceDetailLook } from './surfaceDetail';
 import { Skyline, type SkylineLook } from './skyline';
+import { buildRibbons, type RibbonLook } from './ribbon';
 
 type Vec3 = [number, number, number];
 export interface StageLook {
@@ -28,6 +29,7 @@ export interface StageLook {
   floor: FloorLook;
   backdrop: BackdropLook;
   skyline: SkylineLook;
+  ribbon: RibbonLook;
   charFill: { color: string; intensity: number; rangeM: number; upM: number };
   markers: { ringInnerM: number; ringOuterM: number; hdr: number; opacity: number; haloPx: number; haloHdr: number; foeMarkerPx: number; foeMarkerUpM: number };
   beacon: { heightM: number; radiusM: number; hdr: number; opacity: number; nearFadeM: [number, number] };
@@ -132,6 +134,7 @@ export class Stage {
     scene.add(this.backdrop.group);
     this.skyline = new Skyline(L.skyline);
     scene.add(this.skyline.group);
+    scene.add(buildRibbons(L.ribbon));
 
     // --- コート外周の小物（CC0 モデル。読み込めたら表示） ---
     this.props = new Props(L.props, L.fire);
@@ -201,6 +204,7 @@ export class Stage {
   /** 毎フレーム（火の揺らぎなど） */
   update(timeSec: number): void {
     this.props.update(timeSec);
+    this.skyline.update(timeSec);
   }
 
   /** 環境マップ（床に映るネオン）。レンダラーの初期化後に 1 回だけ */
