@@ -1,11 +1,26 @@
 {
  "slug": "photoreal-arena",
- "current_step": "ハーネス作成済み・未起動",
- "completed": [],
+ "current_step": "イテレーション 1: D4〜D6 実装済み、盲検評価待ち",
+ "completed": [
+  "D4 調査メモ docs/research/graphics-compositing.md（出典 27）",
+  "D5 post 一式（postPipeline.ts・dust.ts、quality の lensFlare/edgeBlur/filmFx）",
+  "D6 three-bvh-csg（csgParts.ts: 選手の仮モデル・支柱）",
+  "遠景を SkyscraperGenerator の 3D ビル群に（skyline.ts、軽い夜マテリアル）",
+  "空を全天ドームに",
+  "投光器 6 灯"
+ ],
  "decisions": [
   {
    "what": "フェンスはノイズ無し・薄い帯の波紋＋うっすら歪むだけ",
    "why": "プランナー確定 2026-10-01（球が見えない）"
+  },
+  {
+   "what": "SkyscraperGenerator の標準マテリアルは使わず自前の夜マテリアル（MeshBasic・窓ハッシュ）",
+   "why": "部屋のレイマーチ＋ノイズでソフトウェア描画が 1 フレーム数十秒、撮影がタイムアウト"
+  },
+  {
+   "what": "TPS の自分は不透明の人型（半透明 0.35 をやめる）",
+   "why": "箱より細く前が見える。半透明は評価で安っぽいと指摘。プランナーのプレイテストで確認が要る"
   }
  ],
  "facts": [
@@ -14,7 +29,13 @@
   "撮影はヘッドレス Chromium の WebGL2（ソフトウェア描画）。実機の WebGPU とは見え方が少し違う",
   "球の大きさ（balance.json ball.radiusM=0.2）は変えられない。可読性は発光・軌跡・コントラストで上げる"
  ],
- "artifacts": [],
+ "artifacts": [
+  "src/render/postPipeline.ts",
+  "src/render/dust.ts",
+  "src/render/csgParts.ts",
+  "src/render/skyline.ts",
+  "docs/research/graphics-compositing.md"
+ ],
  "open_risks": [],
- "next_action": "prompt.md の『最初の一手』1: docs/research/graphics-compositing.md を書く（D4）"
+ "next_action": "verify.sh の盲検評価結果（judge/feedback.md）を読み、high の指摘を潰す"
 }
