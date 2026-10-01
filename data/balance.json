@@ -144,7 +144,8 @@
     "recoveryF": 10,
     "whiffStaggerF": 24,
     "gain": 0.25,
-    "rallySpeedMul": 1.06
+    "rallySpeedMul": 1.06,
+    "rallyDamageAdd": 0.15
   },
   "step": {
     "distanceM": 5,

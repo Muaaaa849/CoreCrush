@@ -95,10 +95,11 @@
     },
     "parry": {
       "type": "object", "additionalProperties": false,
-      "required": ["startupF", "windowF", "recoveryF", "whiffStaggerF", "gain", "rallySpeedMul"],
+      "required": ["startupF", "windowF", "recoveryF", "whiffStaggerF", "gain", "rallySpeedMul", "rallyDamageAdd"],
       "properties": {
         "startupF": { "$ref": "#/definitions/frames" }, "windowF": { "$ref": "#/definitions/posFrames" }, "recoveryF": { "$ref": "#/definitions/frames" },
-        "whiffStaggerF": { "$ref": "#/definitions/frames" }, "gain": { "$ref": "#/definitions/nonneg" }, "rallySpeedMul": { "type": "number", "minimum": 1 }
+        "whiffStaggerF": { "$ref": "#/definitions/frames" }, "gain": { "$ref": "#/definitions/nonneg" }, "rallySpeedMul": { "type": "number", "minimum": 1 },
+        "rallyDamageAdd": { "description": "跳ね返し1回ごとの被弾ダメージの加算率（ラリー n 回で ×(1+値·n)）。キャッチ・爆発・被弾でリセット", "type": "number", "minimum": 0 }
       }
     },
     "step": {

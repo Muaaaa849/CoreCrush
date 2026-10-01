@@ -39,7 +39,7 @@ export interface Balance {
     startupF: number; recoveryF: number; whiffStaggerF: number;
     windowByDefenseF: number[]; justByDefenseF: number[]; gain: number; justBonusGain: number;
   };
-  parry: { startupF: number; windowF: number; recoveryF: number; whiffStaggerF: number; gain: number; rallySpeedMul: number };
+  parry: { startupF: number; windowF: number; recoveryF: number; whiffStaggerF: number; gain: number; rallySpeedMul: number; rallyDamageAdd: number };
   step: { distanceM: number; durationF: number; maxPoints: number; directionBoundaryDeg: number };
   hit: { reactionF: number };
   meter: { max: number };
@@ -93,4 +93,9 @@ export function countSpeedMul(b: Balance, tSec: number): number {
 export function countPowerMul(b: Balance, tSec: number): number {
   const r = tSec / b.count.explodeSec;
   return 1 + b.count.powerCurveAdd * r * r;
+}
+
+/** ラリー倍率（威力）: 跳ね返しの回数 n に対し 1 + rallyDamageAdd·n（加算・上限なし。プランナー 2026-10-01） */
+export function rallyDamageMul(b: Balance, rally: number): number {
+  return 1 + b.parry.rallyDamageAdd * rally;
 }

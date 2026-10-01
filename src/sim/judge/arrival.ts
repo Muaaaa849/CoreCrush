@@ -1,5 +1,5 @@
 // 到達時の判定（受け手権威の判定点）。順序は「キャッチ → 跳ね返し → 被弾」（防御を先に。INV-21）
-import { catchWindowF, justWindowF, countPowerMul } from '../balance';
+import { catchWindowF, justWindowF, countPowerMul, rallyDamageMul } from '../balance';
 import { dropAt, launchFlight } from '../ball';
 import { emit } from '../events';
 import { throwTypeFromInput } from '../throwType';
@@ -59,7 +59,9 @@ export function resolveArrival(w: World): void {
     return;
   }
 
-  const dmg = b.throw.baseDamage * ball.powerMul;
+  // ラリーするほど当たったときの威力が上がる（リスクとリターンが一緒に上がる。プランナー 2026-10-01）
+  // OPEN: Q-32 上げ幅（仮 0.15）・上限・爆発への適用は提案 0004 で確認待ち
+  const dmg = b.throw.baseDamage * ball.powerMul * rallyDamageMul(b, ball.rally);
   r.hp -= dmg;
   setAction(r, 'hitReaction', b.hit.reactionF);
   dropAt(w, r);

@@ -14,6 +14,7 @@ const MUTATIONS = [
   ['INV-08 終盤の伸びを消す', { count: { speedCurveAdd: 0 } }],
   ['INV-10 開幕の猶予を消す', { count: { roundStartFreezeSec: 0 } }],
   ['INV-11 ラリー加速を消す', { parry: { rallySpeedMul: 1 } }],
+  ['INV-11 ラリーの威力上昇を消す', { parry: { rallyDamageAdd: 0 } }],
   ['INV-22 上カーブの頂点マージンを消す', { court: { trajectoryMarginM: -2 } }],
   ['INV-22 床をよく跳ねるように', { ball: { floorRestitution: 0.8 } }],
   ['INV-22 取得半径を体より小さく', { player: { pickupRadiusM: 0.1 } }],

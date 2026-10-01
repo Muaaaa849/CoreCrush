@@ -31,6 +31,33 @@ describe('INV-11 ラリー', () => {
     expect(speeds[speeds.length - 1]!).toBeGreaterThan(v0 * 1.4);
   });
 
+  it('ラリーするほど被弾ダメージが上がる（基本×威力×(1+rallyDamageAdd·n)）', () => {
+    const add = makeWorld().balance.parry.rallyDamageAdd;
+    expect(add).toBeGreaterThan(0);
+    const dmgs: number[] = [];
+    for (const parries of [0, 1, 2, 3]) {
+      const w = makeWorld();
+      giveBall(w, 0);
+      let n = 0;
+      let dmg = 0;
+      let power = 0;
+      let rally = -1;
+      for (let t = 0; t < 60 * 20 && !dmg; t++) {
+        // n 回跳ね返したら、受け手は何もしない
+        const ev = tick(w, t === 0 ? { primary: true } : n < parries ? perfectParry(w, 0) : {}, n < parries ? perfectParry(w, 1) : {});
+        if (w.ball.mode === 'flight') { power = w.ball.powerMul; rally = w.ball.rally; }
+        for (const e of ev) {
+          if (e.kind === 'parry') n++;
+          if (e.kind === 'hit') dmg = e.value;
+        }
+      }
+      expect(rally).toBe(parries);
+      expect(dmg).toBeCloseTo(w.balance.throw.baseDamage * power * (1 + add * parries), 6);
+      dmgs.push(dmg);
+    }
+    for (let i = 1; i < dmgs.length; i++) expect(dmgs[i]!).toBeGreaterThan(dmgs[i - 1]!);
+  });
+
   it('非常に速い球でもすり抜けない（追尾球・狙い投げ）', () => {
     for (const aimed of [false, true]) {
       const w = makeWorld({ balance: { throw: { types: { straight: { speedMps: 800 }, aimed: { speedMps: 800 } } } } });
