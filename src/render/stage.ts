@@ -14,6 +14,7 @@ import { Backdrop, type BackdropLook } from './backdrop';
 import { loadTexture } from './assets';
 import { Props, type FireLook, type PropGroup } from './props';
 import { buildPost, buildTruss } from './csgParts';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import type { SurfaceDetailLook } from './surfaceDetail';
 import { Skyline, type SkylineLook } from './skyline';
 import { buildRibbons, type RibbonLook } from './ribbon';
@@ -39,7 +40,7 @@ export interface StageLook {
   fire: FireLook;
   fighter: { paintBase: string; paintMix: number; paintRoughness: number; paintMetalness: number; metalColor: string; metalRoughness: number; suitColor: string; clearcoat: number; sheen: number; weavePerM: number; glowHdr: number; foeGlowHdr: number; detail: SurfaceDetailLook };
   lines: { widthM: number; hdr: number };
-  cage: { color: string; heightM: number; cellM: number; wireFrac: number; opacity: number; marginM: number; postColor: string; postSpacingM: number };
+  cage: { railsYM: number[]; color: string; heightM: number; cellM: number; wireFrac: number; opacity: number; marginM: number; postColor: string; postSpacingM: number };
   opponentRim: { hdr: number; power: number; lightIntensity: number; lightRangeM: number; lightUpM: number };
   crowd: { count: number; color: string; rowsM: number[]; heightM: [number, number] };
 }
@@ -167,6 +168,16 @@ export class Stage {
     posts.forEach(([x, z], i) => postMesh.setMatrixAt(i, m.makeTranslation(x, 0, z)));
     postMesh.castShadow = true;
     scene.add(postMesh);
+    // 横の手すり（支柱の間を通る角パイプ。4 面×高さごとに 1 本、合わせて 1 ジオメトリ）
+    const railGeos: THREE.BufferGeometry[] = [];
+    for (const y of C.railsYM) {
+      const t = 0.07;
+      for (const sz of [-1, 1]) railGeos.push(new THREE.BoxGeometry(cx * 2, t, t).translate(0, y, sz * cz));
+      for (const sx of [-1, 1]) railGeos.push(new THREE.BoxGeometry(t, t, cz * 2).translate(sx * cx, y, 0));
+    }
+    const rails = new THREE.Mesh(mergeGeometries(railGeos)!, postMesh.material as THREE.Material);
+    rails.castShadow = true;
+    scene.add(rails);
 
     const rnd = lcg(0xc0c0);
     // --- 観客（金網の外のシルエット） ---

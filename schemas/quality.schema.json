@@ -35,7 +35,8 @@
         "floorReflection",
         "lensFlare",
         "edgeBlur",
-        "filmFx"
+        "filmFx",
+        "ao"
       ],
       "properties": {
         "pixelRatioMax": {
@@ -83,6 +84,10 @@
         },
         "filmFx": {
           "description": "グレイン・ライトリーク（グレーディングと同じパス。軽い）",
+          "type": "boolean"
+        },
+        "ao": {
+          "description": "環境遮蔽（GTAO、法線の MRT が要る）",
           "type": "boolean"
         }
       }

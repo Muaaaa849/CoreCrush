@@ -23,6 +23,8 @@ export interface QualityPreset {
   edgeBlur: boolean;
   /** グレイン・ライトリーク */
   filmFx: boolean;
+  /** 環境遮蔽（GTAO） */
+  ao: boolean;
 }
 
 export interface QualityConfig {

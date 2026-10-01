@@ -3,7 +3,7 @@
 // 起動時に一度だけ生成（1 棟 1 ジオメトリ・1 ドローコール、全棟で 1 マテリアル）。影は落とさない。数は画質の decorMul を掛ける。
 import * as THREE from 'three/webgpu';
 import { InterpolationSamplingMode, InterpolationSamplingType } from 'three/webgpu';
-import { attribute, color, dot, float, floor, fract, hash, length, max, min, mix, normalView, normalWorldGeometry, positionLocal, positionViewDirection, positionWorld, select, sin, smoothstep, time, uv, varying, vec2, vec3 } from 'three/tsl';
+import { attribute, color, dot, float, floor, fract, hash, length, max, min, mix, normalView, normalWorldGeometry, positionLocal, positionView, positionViewDirection, positionWorld, select, sin, smoothstep, time, uv, varying, vec2, vec3 } from 'three/tsl';
 import { SkyscraperGenerator } from 'three/addons/generators/city/SkyscraperGenerator.js';
 
 // 生成器が頂点に焼く部位の番号（SkyscraperGenerator.js の PartId）
@@ -168,7 +168,9 @@ export class Skyline {
     const along = float(1).sub(positionLocal.y.div(SL.lengthM));
     const coreK = dot(normalView, positionViewDirection).abs().clamp(0, 1).pow(2);
     bmat.colorNode = color(SL.color).mul(SL.hdr);
-    bmat.opacityNode = along.pow(1.6).mul(coreK).mul(SL.opacity);
+    // カメラの近くを通る部分は消す（板に見えないように）
+    const nearK = smoothstep(80, 200, positionView.z.negate());
+    bmat.opacityNode = along.pow(1.6).mul(coreK).mul(nearK).mul(SL.opacity);
     for (let i = 0; i < SL.count && i * 2 < roofs.length; i++) {
       const p = roofs[Math.floor((i / SL.count) * roofs.length) & ~1]!;
       const mesh = new THREE.Mesh(cone, bmat);

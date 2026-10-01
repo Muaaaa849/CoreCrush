@@ -52,7 +52,8 @@
         "lensFlare",
         "lightLeak",
         "grade",
-        "dust"
+        "dust",
+        "ao"
       ],
       "properties": {
         "vignette": {
@@ -350,6 +351,43 @@
             }
           },
           "description": "空気中の塵（うっすら。数は quality.particleMul を掛ける）"
+        },
+        "ao": {
+          "description": "環境遮蔽（GTAO。高画質のみ quality.ao）",
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "radius",
+            "thickness",
+            "samples",
+            "intensity",
+            "resolutionScale"
+          ],
+          "properties": {
+            "radius": {
+              "type": "number",
+              "minimum": 0
+            },
+            "thickness": {
+              "type": "number",
+              "minimum": 0
+            },
+            "samples": {
+              "type": "integer",
+              "minimum": 4,
+              "maximum": 32
+            },
+            "intensity": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "resolutionScale": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "maximum": 1
+            }
+          }
         }
       },
       "description": "シネマティックなコンポジット（docs/research/graphics-compositing.md）"
@@ -719,7 +757,8 @@
             "opacity",
             "marginM",
             "postColor",
-            "postSpacingM"
+            "postSpacingM",
+            "railsYM"
           ],
           "properties": {
             "color": {
@@ -755,6 +794,15 @@
             "postSpacingM": {
               "type": "number",
               "exclusiveMinimum": 0
+            },
+            "railsYM": {
+              "type": "array",
+              "items": {
+                "type": "number",
+                "minimum": 0
+              },
+              "maxItems": 6,
+              "description": "横の手すりの高さ（m）"
             }
           }
         },

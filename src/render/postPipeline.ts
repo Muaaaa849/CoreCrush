@@ -14,6 +14,7 @@ import { bloom } from 'three/addons/tsl/display/BloomNode.js';
 import { smaa } from 'three/addons/tsl/display/SMAANode.js';
 import { lensflare } from 'three/addons/tsl/display/LensflareNode.js';
 import { gaussianBlur } from 'three/addons/tsl/display/GaussianBlurNode.js';
+import { ao } from 'three/addons/tsl/display/GTAONode.js';
 import renderJson from '../../data/render.json';
 import type { QualityPreset } from './quality';
 import type { StageLook } from './stage';
@@ -32,6 +33,7 @@ export interface PostLook {
     halation: { color: string; amount: number };
   };
   dust: DustLook;
+  ao: { radius: number; thickness: number; samples: number; intensity: number; resolutionScale: number };
 }
 
 export interface DustLook { count: number; sizePx: number; hdr: number; color: string; areaM: Vec3; driftMps: number }
@@ -73,7 +75,7 @@ export class PostPipeline {
 
   /** 画質段階に合わせてノードを組み直す（同じ構成なら何もしない。試合中には呼ばない前提） */
   configure(preset: QualityPreset): void {
-    const key = `${preset.bloomScale}|${preset.smaa}|${preset.lensFlare}|${preset.edgeBlur}|${preset.filmFx}`;
+    const key = `${preset.bloomScale}|${preset.smaa}|${preset.lensFlare}|${preset.edgeBlur}|${preset.filmFx}|${preset.ao}`;
     if (key === this.key) return;
     this.key = key;
     this.disposeNodes();
@@ -81,6 +83,17 @@ export class PostPipeline {
     const scenePass = pass(this.scene, this.camera);
     this.owned.push(scenePass);
     let color4: THREE.Node<'vec4'> = scenePass.getTextureNode('output');
+    if (preset.ao) {
+      // 環境遮蔽（GTAO、半解像度）: 接地感と隙間の陰。法線は深度から復元（MRT を使わない＝半透明の物の問題を避ける、ADR 0005）
+      const A = P.ao;
+      const occ = ao(scenePass.getTextureNode('depth'), null as unknown as THREE.Node, this.camera);
+      occ.resolutionScale = A.resolutionScale;
+      occ.radius.value = A.radius;
+      occ.thickness.value = A.thickness;
+      occ.samples.value = A.samples;
+      this.owned.push(occ);
+      color4 = vec4(color4.rgb.mul(mix(float(1), occ.getTextureNode().r, A.intensity)), 1);
+    }
     if (preset.bloomScale > 0) {
       const b = this.look.bloom;
       const glow = bloom(color4, b.strength, b.radius, b.threshold);

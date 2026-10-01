@@ -12,7 +12,8 @@
       "floorReflection": true,
       "lensFlare": true,
       "edgeBlur": true,
-      "filmFx": true
+      "filmFx": true,
+      "ao": true
     },
     "mid": {
       "pixelRatioMax": 1.5,
@@ -24,7 +25,8 @@
       "floorReflection": false,
       "lensFlare": false,
       "edgeBlur": false,
-      "filmFx": true
+      "filmFx": true,
+      "ao": false
     },
     "low": {
       "pixelRatioMax": 1,
@@ -36,7 +38,8 @@
       "floorReflection": false,
       "lensFlare": false,
       "edgeBlur": false,
-      "filmFx": false
+      "filmFx": false,
+      "ao": false
     }
   },
   "auto": {
