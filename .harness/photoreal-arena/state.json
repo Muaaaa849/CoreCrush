@@ -1,13 +1,21 @@
 {
  "slug": "photoreal-arena",
- "current_step": "イテレーション 1: D4〜D6 実装済み、盲検評価待ち",
+ "current_step": "停止（プランナー判断待ち）: 10 回評価して中央値 58 で頭打ち",
  "completed": [
   "D4 調査メモ docs/research/graphics-compositing.md（出典 27）",
   "D5 post 一式（postPipeline.ts・dust.ts、quality の lensFlare/edgeBlur/filmFx）",
   "D6 three-bvh-csg（csgParts.ts: 選手の仮モデル・支柱）",
   "遠景を SkyscraperGenerator の 3D ビル群に（skyline.ts、軽い夜マテリアル）",
   "空を全天ドームに",
-  "投光器 6 灯"
+  "投光器 6 灯",
+  "照明トラス＋投光器の筐体（CSG）",
+  "HUD の意匠と自前の書体",
+  "相手とコアの足元の輪・相手の光だまり・画面上で一定の大きさのしるし（readable 3/3 を達成）",
+  "ビルの看板・航空障害灯・街明かりの照り返し",
+  "選手の細部と素材の差（クリアコート・布）",
+  "コートの塗装線",
+  "LED 帯看板・サーチライト・金網と手すり・GTAO・CC0 小物 8 点・地平線の光害・装甲の凹凸と角の剥げ・床の反射解像度",
+  "ADR 0007、progress.md 更新"
  ],
  "decisions": [
   {
@@ -36,6 +44,69 @@
   "src/render/skyline.ts",
   "docs/research/graphics-compositing.md"
  ],
- "open_risks": [],
- "next_action": "verify.sh の盲検評価結果（judge/feedback.md）を読み、high の指摘を潰す"
+ "open_risks": [
+  "D7 は 5 回連続 55〜58 で頭打ち。毎回の最大の指摘は「主役（自分の選手）のモデルと素材がプリミティブ」= 本番キャラ（M4、契約の non_goal）。CSG の仮モデルの改良では上がらなくなった",
+  "可読性の票が 0〜3/3 で揺れる。撮影ごとに球の位置（自陣／相手コート）が変わり、相手は 28m 先で約 30px（カメラ・大きさは変えられない）。撮影を決定的にするか、可読性の基準をプランナーと決めたい",
+  "撮影はソフトウェア WebGL2（WebGPU でない）。三角形はビル 20 棟で 2.0〜2.2M（上限 2.5M）",
+  "自分の選手を不透明にした・頭上の三角／光の柱／光の輪を足した（読みやすさのため）→ プレイテストで確認が要る"
+ ],
+ "next_action": "プランナーに報告して判断を仰ぐ: (a) 本番キャラ（M4）を先にする (b) 撮影の球の位置を固定する (c) 目標を 60〜65 に見直す。再開は harnessctl activate photoreal-arena",
+ "scores": [
+  {
+   "iter": 0,
+   "median": 36,
+   "readable": 0
+  },
+  {
+   "iter": 1,
+   "median": 42,
+   "readable": 0
+  },
+  {
+   "iter": 2,
+   "median": 52,
+   "readable": 0
+  },
+  {
+   "iter": 3,
+   "median": 55,
+   "readable": 0
+  },
+  {
+   "iter": 4,
+   "median": 50,
+   "readable": 3
+  },
+  {
+   "iter": 5,
+   "median": 56,
+   "readable": 1
+  },
+  {
+   "iter": 6,
+   "median": 56,
+   "readable": 1
+  },
+  {
+   "iter": 7,
+   "median": 58,
+   "readable": 0
+  },
+  {
+   "iter": 8,
+   "median": 58,
+   "readable": 3
+  },
+  {
+   "iter": 9,
+   "median": 55,
+   "readable": 0,
+   "note": "評価 1 本失敗（2 本）"
+  },
+  {
+   "iter": 10,
+   "median": 58,
+   "readable": 1
+  }
+ ]
 }
